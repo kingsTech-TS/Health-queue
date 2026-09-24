@@ -39,8 +39,6 @@ const steps = [
   { key: "med_questionnaire_submitted", label: "Medical History", desc: "Questionnaire submitted" },
   { key: "physical_reg_queue_attended", label: "Physical Registration", desc: "Registration visit attended" },
   { key: "case_notes_submitted", label: "Case Notes", desc: "Pink file details completed" },
-  { key: "physical_exam_attended", label: "Physical Examination", desc: "Physical exam completed" },
-  { key: "pink_file", label: "Pink File", desc: "Medical record created" },
   { key: "registered", label: "Registration Completed", desc: "All steps done" },
 ];
 
@@ -115,7 +113,7 @@ export default function StudentDashboardPage() {
     med_questionnaire_submitted: Boolean(data?.onboarding?.med_questionnaire_submitted),
     physical_reg_queue_attended: Boolean(data?.onboarding?.physical_reg_queue_attended),
     case_notes_submitted: Boolean(data?.onboarding?.case_notes_submitted),
-    physical_exam_attended: Boolean(data?.onboarding?.physical_exam_attended),
+    registered: Boolean(data?.onboarding?.registration_complete),
   };
 
   return (

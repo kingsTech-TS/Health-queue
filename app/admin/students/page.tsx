@@ -27,6 +27,7 @@ interface Student {
   level?: string;
   hc_number?: string;
   registration_status?: string;
+  registration_complete?: boolean;
   payment_receipt_url?: string;
   payment_confirmed?: boolean;
   payment_rejected?: boolean;
@@ -178,7 +179,8 @@ export default function AdminStudentsPage() {
 
     const matchesLevel = levelFilter === "all" || s.level === levelFilter;
     const matchesFaculty = facultyFilter === "all" || s.faculty === facultyFilter;
-    const matchesStatus = statusFilter === "all" || s.registration_status === statusFilter;
+    const registrationStatus = s.registration_complete ? "completed" : s.registration_status || "in_progress";
+    const matchesStatus = statusFilter === "all" || registrationStatus === statusFilter;
 
     return matchesSearch && matchesLevel && matchesFaculty && matchesStatus;
   });
@@ -317,14 +319,14 @@ export default function AdminStudentsPage() {
                         <td className="py-3.5 px-4">
                           <StatusBadge
                             variant={
-                              s.registration_status === "completed"
+                              s.registration_complete || s.registration_status === "completed"
                                 ? "success"
                                 : s.registration_status === "in_progress"
                                 ? "warning"
                                 : "pending"
                             }
                           >
-                            {s.registration_status || "Pending"}
+                            {s.registration_complete ? "Completed" : s.registration_status || "In Progress"}
                           </StatusBadge>
                         </td>
                         <td className="py-3.5 px-4">

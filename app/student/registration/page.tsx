@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Step = "basic_info" | "payment" | "documents" | "lab_form" | "lab_queue" | "medical" | "physical_registration" | "case_notes" | "physical_exam" | "done";
+type Step = "basic_info" | "payment" | "documents" | "lab_form" | "lab_queue" | "medical" | "physical_registration" | "case_notes" | "done";
 
 const STEPS: { key: Step; label: string }[] = [
   { key: "basic_info", label: "Personal Info" },
@@ -19,7 +19,6 @@ const STEPS: { key: Step; label: string }[] = [
   { key: "medical", label: "Medical History" },
   { key: "physical_registration", label: "Physical Registration" },
   { key: "case_notes", label: "Case Notes" },
-  { key: "physical_exam", label: "Physical Exam" },
   { key: "done", label: "Complete" },
 ];
 
@@ -103,6 +102,8 @@ export default function StudentRegistrationPage() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [paymentRejected, setPaymentRejected] = useState(false);
+  const [paymentRejectionRemark, setPaymentRejectionRemark] = useState<string | undefined>();
 
   // BasicInfo form
   const [basicInfo, setBasicInfo] = useState({
@@ -119,6 +120,8 @@ export default function StudentRegistrationPage() {
     try {
       const status = await apiRequest<Record<string, unknown>>("/api/students/onboarding-status");
       const isDone = (key: string) => Boolean(status[key]);
+      setPaymentRejected(Boolean(status.payment_rejected));
+      setPaymentRejectionRemark(typeof status.payment_rejection_remark === "string" ? status.payment_rejection_remark : undefined);
       const done: number[] = [];
       if (isDone("basic_info_submitted")) done.push(0);
       if (isDone("payment_confirmed")) done.push(1);
@@ -128,11 +131,10 @@ export default function StudentRegistrationPage() {
       if (isDone("med_questionnaire_submitted")) done.push(5);
       if (isDone("physical_reg_queue_attended")) done.push(6);
       if (isDone("case_notes_submitted")) done.push(7);
-      if (isDone("physical_exam_attended")) done.push(8);
-      if (isDone("registration_complete")) done.push(9);
+      if (isDone("registration_complete")) done.push(8);
       setCompleted(done);
       // Set starting step
-      const firstIncomplete = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].find(i => !done.includes(i)) ?? 9;
+      const firstIncomplete = [0, 1, 2, 3, 4, 5, 6, 7, 8].find(i => !done.includes(i)) ?? 8;
       setCurrentStep(firstIncomplete);
 
       // Prefill basic info if it exists
@@ -264,7 +266,8 @@ export default function StudentRegistrationPage() {
         {currentStep === 1 && (
           <PaymentStep
             uploaded={Boolean(completed.includes(1))}
-            rejected={false}
+            rejected={paymentRejected}
+            rejectionRemark={paymentRejectionRemark}
             onUpload={async (file) => {
               await uploadFile("/api/students/upload-payment-receipt", file);
               toast.success("Receipt uploaded. Waiting for admin confirmation.");
@@ -323,10 +326,8 @@ export default function StudentRegistrationPage() {
           />
         )}
 
-        {currentStep === 8 && <QueueStep title="Physical Examination Queue" description="Join the physical examination queue. A registering nurse will complete your examination and pink file." href="/student/queue" onBack={() => setCurrentStep(7)} onDone={() => { void load(); }} />}
-
-        {/* Step 9: Complete */}
-        {currentStep === 9 && (
+        {/* Step 8: Complete */}
+        {currentStep === 8 && (
           <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
             <CheckCircle2 size={48} className="text-emerald-500 mx-auto mb-4" />
             <h2 className="text-lg font-bold text-slate-900 mb-2">Registration Complete!</h2>
@@ -396,11 +397,11 @@ function LabFormStep({ onBack, onDone }: { onBack: () => void; onDone: () => voi
   );
 }
 
-function PaymentStep({ uploaded, rejected, onUpload }: { uploaded: boolean; rejected: boolean; onUpload: (file: File) => Promise<void> }) {
+function PaymentStep({ uploaded, rejected, rejectionRemark, onUpload }: { uploaded: boolean; rejected: boolean; rejectionRemark?: string; onUpload: (file: File) => Promise<void> }) {
   return <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
     <h2 className="text-base font-semibold text-slate-900">Payment Receipt</h2>
     <p className="text-sm text-slate-500">Upload your health center payment receipt. An administrator must confirm it before the next registration step becomes available.</p>
-    {rejected && <p className="text-sm text-red-600">Your receipt was rejected. Upload a corrected receipt.</p>}
+    {rejected && <p className="text-sm text-red-600">Your receipt was rejected. {rejectionRemark || "Upload a corrected receipt."}</p>}
     <FileUploadField label="Payment Receipt" uploaded={uploaded} onUpload={onUpload} />
     {uploaded && <p className="text-sm text-amber-600">Receipt submitted. This step will continue automatically after admin confirmation.</p>}
   </div>;
