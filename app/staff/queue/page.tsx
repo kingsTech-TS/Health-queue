@@ -3,10 +3,10 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthenticatedLayout } from "@/components/layout/AppLayout";
 import { useEffect, useState } from "react";
-import { apiRequest } from "@/lib/utils";
+import { apiRequest, formatDateTime } from "@/lib/utils";
 import { StatusBadge, TableSkeleton, Modal, Button, FormField, Input, EmptyState } from "@/components/ui/shared";
 import {
-  Play, CheckCircle2, XCircle, PhoneCall, Settings2,
+  CheckCircle2, XCircle, PhoneCall, Settings2,
   UserCheck, Eye, RefreshCw
 } from "lucide-react";
 import Link from "next/link";
@@ -99,29 +99,12 @@ export default function StaffQueuePage() {
         body: JSON.stringify(payload),
       });
 
-      toast.success("Queue configured successfully!");
+      toast.success("Queue session created successfully!");
       setConfigModalOpen(false);
       setSession(res);
-      fetchQueueData();
+      await fetchQueueData();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to configure queue session");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleStartSession = async () => {
-    if (!session?.id) return;
-    try {
-      setActionLoading("start");
-      const res = await apiRequest<ActiveSession>(`/api/queues/sessions/${session.id}/start`, {
-        method: "POST",
-      });
-      setSession(res);
-      toast.success("Queue session is now ACTIVE!");
-      fetchQueueData();
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to start queue session");
     } finally {
       setActionLoading(null);
     }
@@ -188,11 +171,7 @@ export default function StaffQueuePage() {
           <div>
             <h1 className="text-xl font-bold text-slate-900">{pageTitle}</h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              {session?.status === "active"
-                ? `Active Session • Started at ${session.start_datetime || "08:00 AM"}`
-                : session?.status === "scheduled"
-                ? `Session Scheduled for ${session.start_datetime || "Today"}`
-                : "No active queue session configured"}
+              {session ? "Queue session created and ready for students" : "No queue session configured"}
             </p>
           </div>
 
@@ -205,18 +184,6 @@ export default function StaffQueuePage() {
               <Settings2 size={14} className="mr-1.5" />
               Configure Queue
             </Button>
-
-            {session && session.status !== "active" && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleStartSession}
-                loading={actionLoading === "start"}
-              >
-                <Play size={14} className="mr-1.5 fill-white" />
-                Start Queue
-              </Button>
-            )}
 
             <Button
               variant="primary"
@@ -239,6 +206,35 @@ export default function StaffQueuePage() {
             </Button>
           </div>
         </div>
+
+        {session && (
+          <div className="bg-white rounded-2xl border border-emerald-200 p-5 shadow-sm">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <StatusBadge variant={session.status === "active" ? "success" : "warning"}>
+                    {session.status === "active" ? "Active" : session.status}
+                  </StatusBadge>
+                  <span className="text-xs text-slate-400">Queue session created</span>
+                </div>
+                <h2 className="text-base font-bold text-slate-900">{session.title || pageTitle}</h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  {formatDateTime(session.start_datetime)} - {formatDateTime(session.end_datetime)}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-center sm:min-w-56">
+                <div className="rounded-lg bg-slate-50 px-4 py-2">
+                  <p className="text-lg font-bold text-slate-900">{session.max_students ?? "-"}</p>
+                  <p className="text-[11px] text-slate-500">Capacity</p>
+                </div>
+                <div className="rounded-lg bg-slate-50 px-4 py-2">
+                  <p className="text-lg font-bold text-slate-900">{session.time_per_student_minutes ?? "-"}</p>
+                  <p className="text-[11px] text-slate-500">Minutes/student</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* NOW SERVING CARD (Prompt #25) */}
         {currentServing && (
