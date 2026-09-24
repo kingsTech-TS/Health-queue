@@ -114,11 +114,3 @@ export default function HealthCardPage() {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex gap-2">
-      <span className="text-xs text-slate-400 w-28 shrink-0">{label}</span>
-      <span className="text-xs font-medium text-slate-800">{value}</span>
-    </div>
-  );
-}
