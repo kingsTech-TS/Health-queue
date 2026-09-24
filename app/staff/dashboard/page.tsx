@@ -3,7 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthenticatedLayout } from "@/components/layout/AppLayout";
 import { useEffect, useState } from "react";
-import { apiRequest, getGreeting, formatDateTime, cn } from "@/lib/utils";
+import { apiRequest, getGreeting } from "@/lib/utils";
 import { StatCard, CardSkeleton, ErrorState, StatusBadge, Button } from "@/components/ui/shared";
 import {
   Users, Clock, CheckCircle2, AlertCircle, FlaskConical,
@@ -32,6 +32,11 @@ interface StaffStats {
   missed: number;
 }
 
+interface ActiveSession {
+  id?: string;
+  status?: string;
+}
+
 export default function StaffDashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<StaffStats>({
@@ -41,13 +46,13 @@ export default function StaffDashboardPage() {
     missed: 0,
   });
   const [activeQueue, setActiveQueue] = useState<QueueEntry[]>([]);
-  const [activeSession, setActiveSession] = useState<any>(null);
+  const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [callingNext, setCallingNext] = useState(false);
 
   const isLabAttendant = user?.sub_role === "lab_attendant";
-  const queueType = isLabAttendant ? "lab" : "registration";
+  const queueType = isLabAttendant ? "lab_test" : "physical_registration";
   const staffRoleTitle = isLabAttendant ? "Lab Attendant" : "Registering Nurse";
 
   const loadDashboardData = async () => {
@@ -57,7 +62,7 @@ export default function StaffDashboardPage() {
 
       // Fetch queue stats / session
       try {
-        const session = await apiRequest<any>(`/api/queues/sessions/active/${queueType}`);
+        const session = await apiRequest<ActiveSession>(`/api/queues/sessions/active/${queueType}`);
         setActiveSession(session);
         if (session && session.id) {
           const entries = await apiRequest<QueueEntry[]>(`/api/queues/sessions/${session.id}/entries`);
@@ -75,10 +80,10 @@ export default function StaffDashboardPage() {
             missed: missedCount,
           });
         }
-      } catch (err: any) {
+      } catch {
         // Fallback to queue status endpoint
         try {
-          const queueData = await apiRequest<any>(`/api/queues/status/${queueType}`);
+          const queueData = await apiRequest<{ total_today?: number; waiting_count?: number; completed_count?: number; missed_count?: number }>(`/api/queues/status/${queueType}`);
           if (queueData) {
             setStats({
               students_today: queueData.total_today || 0,
@@ -89,15 +94,15 @@ export default function StaffDashboardPage() {
           }
         } catch {}
       }
-    } catch (err: any) {
-      setError(err?.message || "Failed to load dashboard data");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadDashboardData();
+    queueMicrotask(() => { void loadDashboardData(); });
   }, [user]);
 
   const handleCallNext = async () => {
@@ -107,13 +112,13 @@ export default function StaffDashboardPage() {
     }
     try {
       setCallingNext(true);
-      const called = await apiRequest<any>(`/api/queues/sessions/${activeSession.id}/call-next`, {
+      const called = await apiRequest<QueueEntry>(`/api/queues/sessions/${activeSession.id}/call-next`, {
         method: "POST",
       });
       toast.success(`Calling Queue #${called?.queue_number || "Next"}!`);
       loadDashboardData();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to call next student");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to call next student");
     } finally {
       setCallingNext(false);
     }

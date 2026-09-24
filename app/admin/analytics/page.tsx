@@ -11,7 +11,7 @@ import {
 
 export default function AdminAnalyticsPage() {
   const [timeframe, setTimeframe] = useState<"week" | "month">("month");
-  const [stats, setStats] = useState<any>({
+  const [stats, setStats] = useState({
     total_students: 124,
     registered_completed: 86,
     registered_pending: 38,
@@ -26,13 +26,17 @@ export default function AdminAnalyticsPage() {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const res = await apiRequest<any>("/api/admin/dashboard-stats");
+        const res = await apiRequest<Partial<typeof stats> & { completed_registrations?: number; pending_registrations?: number; lab_records_count?: number; physical_exams_count?: number }>("/api/admin/dashboard-stats");
         if (res) {
-          setStats((prev: any) => ({
+          setStats((prev) => ({
             ...prev,
             total_students: res.total_students ?? prev.total_students,
-            registered_completed: res.registered_students ?? prev.registered_completed,
+            registered_completed: res.completed_registrations ?? prev.registered_completed,
             registered_pending: res.pending_registrations ?? prev.registered_pending,
+            students_attended: res.students_attended ?? prev.students_attended,
+            students_missed: res.students_missed ?? prev.students_missed,
+            lab_records: res.lab_records_count ?? prev.lab_records,
+            physical_exams: res.physical_exams_count ?? prev.physical_exams,
           }));
         }
       } catch {

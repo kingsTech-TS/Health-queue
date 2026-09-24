@@ -3,18 +3,23 @@
 import { useEffect, useState } from "react";
 import { AuthenticatedLayout } from "@/components/layout/AppLayout";
 import { apiRequest } from "@/lib/utils";
-import { Button, FormField, Input, Select, Textarea, PageHeader, ErrorState, StatusBadge } from "@/components/ui/shared";
+import { Button, FormField, Input, Select, Textarea, PageHeader, ErrorState } from "@/components/ui/shared";
 import { toast } from "sonner";
 import { CheckCircle2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Step = "basic_info" | "documents" | "lab_form" | "case_notes" | "done";
+type Step = "basic_info" | "payment" | "documents" | "lab_form" | "lab_queue" | "medical" | "physical_registration" | "case_notes" | "physical_exam" | "done";
 
 const STEPS: { key: Step; label: string }[] = [
   { key: "basic_info", label: "Personal Info" },
+  { key: "payment", label: "Payment" },
   { key: "documents", label: "Documents" },
   { key: "lab_form", label: "Lab Form" },
+  { key: "lab_queue", label: "Lab Queue" },
+  { key: "medical", label: "Medical History" },
+  { key: "physical_registration", label: "Physical Registration" },
   { key: "case_notes", label: "Case Notes" },
+  { key: "physical_exam", label: "Physical Exam" },
   { key: "done", label: "Complete" },
 ];
 
@@ -113,16 +118,21 @@ export default function StudentRegistrationPage() {
     setLoading(true);
     try {
       const status = await apiRequest<Record<string, unknown>>("/api/students/onboarding-status");
-      const steps = (status.steps as Record<string, boolean>) ?? {};
+      const isDone = (key: string) => Boolean(status[key]);
       const done: number[] = [];
-      if (steps.basic_info) done.push(0);
-      if (steps.passport) done.push(1);
-      if (steps.lab_request) done.push(2);
-      if (steps.case_notes) done.push(3);
-      if (status.is_complete) done.push(4);
+      if (isDone("basic_info_submitted")) done.push(0);
+      if (isDone("payment_confirmed")) done.push(1);
+      if (isDone("passport_uploaded") && isDone("signature_uploaded")) done.push(2);
+      if (isDone("lab_form_submitted")) done.push(3);
+      if (isDone("lab_queue_attended")) done.push(4);
+      if (isDone("med_questionnaire_submitted")) done.push(5);
+      if (isDone("physical_reg_queue_attended")) done.push(6);
+      if (isDone("case_notes_submitted")) done.push(7);
+      if (isDone("physical_exam_attended")) done.push(8);
+      if (isDone("registration_complete")) done.push(9);
       setCompleted(done);
       // Set starting step
-      const firstIncomplete = [0, 1, 2, 3, 4].find(i => !done.includes(i)) ?? 4;
+      const firstIncomplete = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].find(i => !done.includes(i)) ?? 9;
       setCurrentStep(firstIncomplete);
 
       // Prefill basic info if it exists
@@ -147,7 +157,7 @@ export default function StudentRegistrationPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { queueMicrotask(() => { void load(); }); }, []);
 
   const markDone = (idx: number) => setCompleted(prev => Array.from(new Set([...prev, idx])));
 
@@ -231,11 +241,11 @@ export default function StudentRegistrationPage() {
                 <Input value={basicInfo.phone_number} onChange={e => setBi("phone_number", e.target.value)} placeholder="080..." />
               </FormField>
               <FormField label="Faculty">
-                <Input value={basicInfo.faculty} onChange={e => setBi("faculty", e.target.value)} placeholder="Faculty" />
+                <Input required value={basicInfo.faculty} onChange={e => setBi("faculty", e.target.value)} placeholder="Faculty" />
               </FormField>
               <div className="col-span-2">
-                <FormField label="Department">
-                  <Input value={basicInfo.department} onChange={e => setBi("department", e.target.value)} placeholder="Department" />
+                <FormField label="Department" required>
+                  <Input required value={basicInfo.department} onChange={e => setBi("department", e.target.value)} placeholder="Department" />
                 </FormField>
               </div>
               <div className="col-span-2">
@@ -250,52 +260,73 @@ export default function StudentRegistrationPage() {
           </div>
         )}
 
-        {/* Step 1: Documents */}
+        {/* Step 1: Payment */}
         {currentStep === 1 && (
+          <PaymentStep
+            uploaded={Boolean(completed.includes(1))}
+            rejected={false}
+            onUpload={async (file) => {
+              await uploadFile("/api/students/upload-payment-receipt", file);
+              toast.success("Receipt uploaded. Waiting for admin confirmation.");
+              await load();
+            }}
+          />
+        )}
+
+        {/* Step 2: Documents */}
+        {currentStep === 2 && (
           <div className="bg-white rounded-xl border border-slate-200 p-6">
             <h2 className="text-base font-semibold text-slate-900 mb-5">Upload Documents</h2>
             <div className="grid grid-cols-2 gap-6">
               <FileUploadField
                 label="Passport Photograph"
-                uploaded={completed.includes(1)}
+                uploaded={Boolean(completed.includes(2))}
                 onUpload={async (file) => {
                   await uploadFile("/api/students/upload-passport", file);
-                  markDone(1);
+                  await load();
                 }}
               />
               <FileUploadField
                 label="Signature"
-                uploaded={completed.includes(1)}
+                uploaded={Boolean(completed.includes(2))}
                 onUpload={async (file) => {
                   await uploadFile("/api/students/upload-signature", file);
                 }}
               />
             </div>
             <div className="mt-6 flex justify-between">
-              <Button variant="secondary" onClick={() => setCurrentStep(0)}>Back</Button>
-              <Button onClick={() => { markDone(1); setCurrentStep(2); }}>Continue</Button>
+              <Button variant="secondary" onClick={() => setCurrentStep(1)}>Back</Button>
+              <Button onClick={() => { setCurrentStep(3); }}>Continue</Button>
             </div>
           </div>
         )}
 
-        {/* Step 2: Lab Form */}
-        {currentStep === 2 && (
-          <LabFormStep
-            onBack={() => setCurrentStep(1)}
-            onDone={() => { markDone(2); setCurrentStep(3); }}
-          />
-        )}
-
-        {/* Step 3: Case Notes */}
+        {/* Step 3: Lab Form */}
         {currentStep === 3 && (
-          <CaseNotesStep
+          <LabFormStep
             onBack={() => setCurrentStep(2)}
             onDone={() => { markDone(3); setCurrentStep(4); }}
           />
         )}
 
-        {/* Step 4: Complete */}
-        {currentStep === 4 && (
+        {currentStep === 4 && <QueueStep title="Laboratory Queue" description="Join the laboratory queue when a session is active. Your lab result is recorded by the lab attendant." href="/student/queue" onBack={() => setCurrentStep(3)} onDone={() => { void load(); }} />}
+
+        {currentStep === 5 && <MedicalQuestionnaireStep onBack={() => setCurrentStep(4)} onDone={() => { markDone(5); setCurrentStep(6); }} />}
+
+        {currentStep === 6 && <QueueStep title="Physical Registration Queue" description="Join the physical registration queue after your medical questionnaire is submitted." href="/student/queue" onBack={() => setCurrentStep(5)} onDone={() => { void load(); }} />}
+
+        {/* Step 7: Case Notes */}
+        {currentStep === 7 && (
+          <CaseNotesStep
+            onBack={() => setCurrentStep(6)}
+            onDone={() => { markDone(7); setCurrentStep(8); }}
+          />
+        )}
+
+        {currentStep === 8 && <QueueStep title="Physical Examination Queue" description="Join the physical examination queue. A registering nurse will complete your examination and pink file." href="/student/queue" onBack={() => setCurrentStep(7)} onDone={() => { void load(); }} />}
+
+        {/* Step 9: Complete */}
+        {currentStep === 9 && (
           <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
             <CheckCircle2 size={48} className="text-emerald-500 mx-auto mb-4" />
             <h2 className="text-lg font-bold text-slate-900 mb-2">Registration Complete!</h2>
@@ -314,7 +345,7 @@ export default function StudentRegistrationPage() {
 }
 
 function LabFormStep({ onBack, onDone }: { onBack: () => void; onDone: () => void }) {
-  const [form, setForm] = useState({ surname: "", first_name: "", age: "", sex: "", department: "", complaint: "", test_required: "" });
+  const [form, setForm] = useState({ surname: "", first_name: "", age: "", sex: "", faculty: "", department: "", complaint: "", test_required: "" });
   const [saving, setSaving] = useState(false);
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
@@ -346,7 +377,8 @@ function LabFormStep({ onBack, onDone }: { onBack: () => void; onDone: () => voi
             <option value="">Select</option><option>Male</option><option>Female</option>
           </Select>
         </FormField>
-        <div className="col-span-2">
+        <FormField label="Faculty" required><Input value={form.faculty} onChange={e => set("faculty", e.target.value)} /></FormField>
+        <div>
           <FormField label="Department" required><Input value={form.department} onChange={e => set("department", e.target.value)} /></FormField>
         </div>
         <div className="col-span-2">
@@ -362,6 +394,48 @@ function LabFormStep({ onBack, onDone }: { onBack: () => void; onDone: () => voi
       </div>
     </div>
   );
+}
+
+function PaymentStep({ uploaded, rejected, onUpload }: { uploaded: boolean; rejected: boolean; onUpload: (file: File) => Promise<void> }) {
+  return <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
+    <h2 className="text-base font-semibold text-slate-900">Payment Receipt</h2>
+    <p className="text-sm text-slate-500">Upload your health center payment receipt. An administrator must confirm it before the next registration step becomes available.</p>
+    {rejected && <p className="text-sm text-red-600">Your receipt was rejected. Upload a corrected receipt.</p>}
+    <FileUploadField label="Payment Receipt" uploaded={uploaded} onUpload={onUpload} />
+    {uploaded && <p className="text-sm text-amber-600">Receipt submitted. This step will continue automatically after admin confirmation.</p>}
+  </div>;
+}
+
+function QueueStep({ title, description, href, onBack, onDone }: { title: string; description: string; href: string; onBack: () => void; onDone: () => void }) {
+  return <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
+    <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+    <p className="text-sm text-slate-500">{description}</p>
+    <div className="flex justify-between">
+      <Button variant="secondary" onClick={onBack}>Back</Button>
+      <div className="flex gap-2"><Button variant="outline" onClick={() => window.location.href = href}>Open Queue</Button><Button onClick={onDone}>Refresh Status</Button></div>
+    </div>
+  </div>;
+}
+
+function MedicalQuestionnaireStep({ onBack, onDone }: { onBack: () => void; onDone: () => void }) {
+  const [form, setForm] = useState({ full_name: "", age_last_birthday: "", date_of_birth: "", sex: "", marital_status: "", nationality: "Nigerian", state_of_origin: "", religion: "", occupation_of_parent_guardian: "", faculty: "", department: "", medical_illness_history: "", previous_surgeries: "", previous_hospital_admissions: "", reasons_for_admission: "", tuberculosis: "no", diabetes: "no", epilepsy: "no", sickle_cell_disease: "no", asthma: "no", psychiatric_illness: "no", visual_impairment: "no", sexually_transmitted_disease: "no", menstrual_disorder: "no", allergies: "", current_medications: "", family_medical_history: "" });
+  const [saving, setSaving] = useState(false);
+  const set = (key: string, value: string) => setForm(current => ({ ...current, [key]: value }));
+  const save = async () => {
+    setSaving(true);
+    try {
+      const lists = (value: string) => value.split(",").map(item => item.trim()).filter(Boolean);
+      await apiRequest("/api/students/medical-examination-questionnaire", { method: "POST", body: JSON.stringify({ ...form, age_last_birthday: Number(form.age_last_birthday), medical_illness_history: lists(form.medical_illness_history), previous_surgeries: lists(form.previous_surgeries), previous_hospital_admissions: lists(form.previous_hospital_admissions), reasons_for_admission: lists(form.reasons_for_admission) }) });
+      toast.success("Medical questionnaire submitted!"); onDone();
+    } catch (err: unknown) { toast.error(err instanceof Error ? err.message : "Save failed"); } finally { setSaving(false); }
+  };
+  const questions = ["tuberculosis", "diabetes", "epilepsy", "sickle_cell_disease", "asthma", "psychiatric_illness", "visual_impairment", "sexually_transmitted_disease", "menstrual_disorder"];
+  return <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5"><div><h2 className="text-base font-semibold text-slate-900">Medical Examination Questionnaire</h2><p className="text-sm text-slate-500 mt-1">Use commas to separate multiple history entries.</p></div><div className="grid grid-cols-2 gap-4">
+    {[["full_name", "Full Name"], ["age_last_birthday", "Age"], ["date_of_birth", "Date of Birth"], ["nationality", "Nationality"], ["state_of_origin", "State of Origin"], ["religion", "Religion"], ["occupation_of_parent_guardian", "Parent/Guardian Occupation"], ["faculty", "Faculty"], ["department", "Department"]].map(([key, label]) => <FormField key={key} label={label} required><Input type={key === "date_of_birth" ? "date" : key === "age_last_birthday" ? "number" : "text"} value={form[key as keyof typeof form]} onChange={e => set(key, e.target.value)} /></FormField>)}
+    <FormField label="Sex" required><Select value={form.sex} onChange={e => set("sex", e.target.value)}><option value="">Select</option><option value="M">Male</option><option value="F">Female</option></Select></FormField><FormField label="Marital Status" required><Select value={form.marital_status} onChange={e => set("marital_status", e.target.value)}><option value="">Select</option><option value="single">Single</option><option value="married">Married</option></Select></FormField>
+    {[['medical_illness_history','Previous Illnesses'],['previous_surgeries','Previous Surgeries'],['previous_hospital_admissions','Previous Hospital Admissions'],['reasons_for_admission','Reasons for Admission']].map(([key,label]) => <div className="col-span-2" key={key}><FormField label={label} required><Textarea value={form[key as keyof typeof form]} onChange={e => set(key, e.target.value)} placeholder="Separate entries with commas" /></FormField></div>)}
+    {questions.map(key => <FormField key={key} label={key.replaceAll("_", " ")} required><Select value={form[key as keyof typeof form]} onChange={e => set(key, e.target.value)}><option value="no">No</option><option value="yes">Yes</option></Select></FormField>)}
+    </div><div className="flex justify-between"><Button variant="secondary" onClick={onBack}>Back</Button><Button onClick={save} loading={saving}>Submit Questionnaire</Button></div></div>;
 }
 
 function CaseNotesStep({ onBack, onDone }: { onBack: () => void; onDone: () => void }) {

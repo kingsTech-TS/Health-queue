@@ -3,11 +3,11 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthenticatedLayout } from "@/components/layout/AppLayout";
 import { useEffect, useState } from "react";
-import { apiRequest, formatDateTime } from "@/lib/utils";
-import { StatusBadge, ErrorState, TableSkeleton, Modal, Button, FormField, Input, EmptyState } from "@/components/ui/shared";
+import { apiRequest } from "@/lib/utils";
+import { StatusBadge, TableSkeleton, Modal, Button, FormField, Input, EmptyState } from "@/components/ui/shared";
 import {
   Play, CheckCircle2, XCircle, PhoneCall, Settings2,
-  Clock, UserCheck, Eye, RefreshCw
+  UserCheck, Eye, RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -27,11 +27,12 @@ interface QueueEntry {
 interface ActiveSession {
   id: string;
   queue_type: string;
+  title?: string;
   status: "scheduled" | "active" | "completed" | "cancelled";
   max_students?: number;
-  date?: string;
-  start_time?: string;
-  minutes_per_student?: number;
+  start_datetime?: string;
+  end_datetime?: string;
+  time_per_student_minutes?: number;
 }
 
 export default function StaffQueuePage() {
@@ -45,13 +46,15 @@ export default function StaffQueuePage() {
   // Form states for queue configuration
   const [configForm, setConfigForm] = useState({
     max_students: 50,
+    title: "",
     date: new Date().toISOString().split("T")[0],
     start_time: "08:00",
+    end_time: "16:00",
     minutes_per_student: 10,
   });
 
   const isLabAttendant = user?.sub_role === "lab_attendant";
-  const queueType = isLabAttendant ? "lab" : "registration";
+  const queueType = isLabAttendant ? "lab_test" : "physical_registration";
   const pageTitle = isLabAttendant ? "Laboratory Queue" : "Registration Queue";
 
   const fetchQueueData = async () => {
@@ -75,7 +78,7 @@ export default function StaffQueuePage() {
   };
 
   useEffect(() => {
-    fetchQueueData();
+    queueMicrotask(() => { void fetchQueueData(); });
   }, [queueType]);
 
   const handleCreateOrUpdateSession = async (e: React.FormEvent) => {
@@ -83,11 +86,12 @@ export default function StaffQueuePage() {
     try {
       setActionLoading("config");
       const payload = {
+        title: configForm.title || pageTitle,
         queue_type: queueType,
         max_students: Number(configForm.max_students),
-        date: configForm.date,
-        start_time: configForm.start_time,
-        minutes_per_student: Number(configForm.minutes_per_student),
+        time_per_student_minutes: Number(configForm.minutes_per_student),
+        start_datetime: new Date(`${configForm.date}T${configForm.start_time}:00`).toISOString(),
+        end_datetime: new Date(`${configForm.date}T${configForm.end_time}:00`).toISOString(),
       };
 
       const res = await apiRequest<ActiveSession>("/api/queues/sessions", {
@@ -99,8 +103,8 @@ export default function StaffQueuePage() {
       setConfigModalOpen(false);
       setSession(res);
       fetchQueueData();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to configure queue session");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to configure queue session");
     } finally {
       setActionLoading(null);
     }
@@ -116,8 +120,8 @@ export default function StaffQueuePage() {
       setSession(res);
       toast.success("Queue session is now ACTIVE!");
       fetchQueueData();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to start queue session");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to start queue session");
     } finally {
       setActionLoading(null);
     }
@@ -130,13 +134,13 @@ export default function StaffQueuePage() {
     }
     try {
       setActionLoading("call-next");
-      const called = await apiRequest<any>(`/api/queues/sessions/${session.id}/call-next`, {
+      const called = await apiRequest<QueueEntry>(`/api/queues/sessions/${session.id}/call-next`, {
         method: "POST",
       });
       toast.success(`Now calling Queue #${called?.queue_number || "Next"}!`);
       fetchQueueData();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to call next student");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to call next student");
     } finally {
       setActionLoading(null);
     }
@@ -151,8 +155,8 @@ export default function StaffQueuePage() {
       });
       toast.success("Student marked as completed!");
       fetchQueueData();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to complete entry");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to complete entry");
     } finally {
       setActionLoading(null);
     }
@@ -167,8 +171,8 @@ export default function StaffQueuePage() {
       });
       toast.info("Student marked as missed.");
       fetchQueueData();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to mark missed");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to mark missed");
     } finally {
       setActionLoading(null);
     }
@@ -185,9 +189,9 @@ export default function StaffQueuePage() {
             <h1 className="text-xl font-bold text-slate-900">{pageTitle}</h1>
             <p className="text-xs text-slate-500 mt-0.5">
               {session?.status === "active"
-                ? `Active Session • Started at ${session.start_time || "08:00 AM"}`
+                ? `Active Session • Started at ${session.start_datetime || "08:00 AM"}`
                 : session?.status === "scheduled"
-                ? `Session Scheduled for ${session.date || "Today"}`
+                ? `Session Scheduled for ${session.start_datetime || "Today"}`
                 : "No active queue session configured"}
             </p>
           </div>
@@ -418,6 +422,9 @@ export default function StaffQueuePage() {
           title={`Configure ${pageTitle}`}
         >
           <form onSubmit={handleCreateOrUpdateSession} className="space-y-4">
+            <FormField label="Session Title" required>
+              <Input value={configForm.title} onChange={(e) => setConfigForm({ ...configForm, title: e.target.value })} placeholder={pageTitle} required />
+            </FormField>
             <FormField label="Queue Date" required>
               <Input
                 type="date"
@@ -434,6 +441,10 @@ export default function StaffQueuePage() {
                 onChange={(e) => setConfigForm({ ...configForm, start_time: e.target.value })}
                 required
               />
+            </FormField>
+
+            <FormField label="Ending Time" required>
+              <Input type="time" value={configForm.end_time} onChange={(e) => setConfigForm({ ...configForm, end_time: e.target.value })} required />
             </FormField>
 
             <FormField label="Maximum Number of Students" required>

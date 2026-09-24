@@ -3,19 +3,24 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthenticatedLayout } from "@/components/layout/AppLayout";
 import { useEffect, useState } from "react";
-import { apiRequest, getGreeting, formatDateTime, cn } from "@/lib/utils";
+import { apiRequest, getGreeting, cn } from "@/lib/utils";
 import { StatCard, ErrorState, CardSkeleton } from "@/components/ui/shared";
 import { CheckCircle2, Circle, Lock, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 interface OnboardingStatus {
-  current_step?: string;
-  steps?: Record<string, boolean>;
-  is_complete?: boolean;
-  can_join_queue?: boolean;
-  payment_status?: string;
-  registration_status?: string;
+  current_step?: number;
+  registration_complete?: boolean;
+  payment_confirmed?: boolean;
+  basic_info_submitted?: boolean;
+  passport_uploaded?: boolean;
+  signature_uploaded?: boolean;
+  lab_form_submitted?: boolean;
+  lab_queue_attended?: boolean;
+  med_questionnaire_submitted?: boolean;
+  physical_reg_queue_attended?: boolean;
+  case_notes_submitted?: boolean;
+  physical_exam_attended?: boolean;
 }
 
 interface DashboardData {
@@ -30,7 +35,11 @@ const steps = [
   { key: "passport", label: "Passport & Signature", desc: "Documents uploaded" },
   { key: "payment", label: "Payment", desc: "Health center fee paid" },
   { key: "lab_request", label: "Laboratory Form", desc: "Lab request submitted" },
-  { key: "physical_exam", label: "Physical Examination", desc: "Physical exam completed" },
+  { key: "lab_queue_attended", label: "Laboratory Queue", desc: "Laboratory visit attended" },
+  { key: "med_questionnaire_submitted", label: "Medical History", desc: "Questionnaire submitted" },
+  { key: "physical_reg_queue_attended", label: "Physical Registration", desc: "Registration visit attended" },
+  { key: "case_notes_submitted", label: "Case Notes", desc: "Pink file details completed" },
+  { key: "physical_exam_attended", label: "Physical Examination", desc: "Physical exam completed" },
   { key: "pink_file", label: "Pink File", desc: "Medical record created" },
   { key: "registered", label: "Registration Completed", desc: "All steps done" },
 ];
@@ -70,7 +79,6 @@ function ProgressTimeline({ completed }: { completed: Record<string, boolean> })
 
 export default function StudentDashboardPage() {
   const { user } = useAuth();
-  const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -91,7 +99,7 @@ export default function StudentDashboardPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { queueMicrotask(() => { void load(); }); }, []);
 
   // Redirect unapproved/suspended staff (shouldn't be here, but guard)
   if (!user) return null;
@@ -99,7 +107,15 @@ export default function StudentDashboardPage() {
   const greeting = `${getGreeting()}, ${user.email.split("@")[0]}`;
   const completedSteps: Record<string, boolean> = {
     account: true,
-    ...(data?.onboarding?.steps ?? {}),
+    basic_info: Boolean(data?.onboarding?.basic_info_submitted),
+    passport: Boolean(data?.onboarding?.passport_uploaded && data?.onboarding?.signature_uploaded),
+    payment: Boolean(data?.onboarding?.payment_confirmed),
+    lab_request: Boolean(data?.onboarding?.lab_form_submitted),
+    lab_queue_attended: Boolean(data?.onboarding?.lab_queue_attended),
+    med_questionnaire_submitted: Boolean(data?.onboarding?.med_questionnaire_submitted),
+    physical_reg_queue_attended: Boolean(data?.onboarding?.physical_reg_queue_attended),
+    case_notes_submitted: Boolean(data?.onboarding?.case_notes_submitted),
+    physical_exam_attended: Boolean(data?.onboarding?.physical_exam_attended),
   };
 
   return (
@@ -123,7 +139,7 @@ export default function StudentDashboardPage() {
             <StatCard label="Level" value={data?.student?.level ?? "—"} sub="Academic level" />
             <StatCard label="Faculty" value={data?.student?.faculty ?? "—"} sub="Your faculty" />
             <StatCard label="HC Number" value={data?.case_notes?.hc_number ?? "Not assigned"} sub="Health center ID" variant={data?.case_notes?.hc_number ? "primary" : "default"} />
-            <StatCard label="Status" value={data?.onboarding?.registration_status ?? "In Progress"} sub="Registration state" />
+            <StatCard label="Status" value={data?.onboarding?.registration_complete ? "Complete" : "In Progress"} sub="Registration state" />
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
@@ -137,11 +153,11 @@ export default function StudentDashboardPage() {
             <div className="space-y-3">
               <h2 className="text-base font-semibold text-slate-900">Quick Actions</h2>
               {[
-                { label: "Continue Registration", href: "/student/registration", show: !data?.onboarding?.is_complete },
-                { label: "View Queue Status", href: "/student/queue", show: data?.onboarding?.can_join_queue },
+                { label: "Continue Registration", href: "/student/registration", show: !data?.onboarding?.registration_complete },
+                { label: "View Queue Status", href: "/student/queue", show: true },
                 { label: "View Pink File", href: "/student/pink-file", show: !!data?.case_notes?.hc_number },
                 { label: "My Profile", href: "/student/profile", show: true },
-                { label: "Health Center Card", href: "/student/health-card", show: data?.onboarding?.is_complete },
+                { label: "Health Center Card", href: "/student/health-card", show: data?.onboarding?.registration_complete },
               ].filter(a => a.show).map((action) => (
                 <Link
                   key={action.href}
