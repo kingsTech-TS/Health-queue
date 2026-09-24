@@ -8,8 +8,7 @@ import {
   Button, Modal, FormField, ConfirmDialog
 } from "@/components/ui/shared";
 import {
-  Search, Upload, UserPlus, Trash2, Eye,
-  CheckCircle2, AlertCircle, FileSpreadsheet, ChevronRight
+  Search, Upload, UserPlus, Trash2, Eye, ReceiptText
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -28,6 +27,10 @@ interface Student {
   level?: string;
   hc_number?: string;
   registration_status?: string;
+  payment_receipt_url?: string;
+  payment_confirmed?: boolean;
+  payment_rejected?: boolean;
+  payment_rejection_remark?: string | null;
 }
 
 export default function AdminStudentsPage() {
@@ -56,6 +59,10 @@ export default function AdminStudentsPage() {
   // Delete modal
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [paymentTarget, setPaymentTarget] = useState<Student | null>(null);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
+  const [rejectingPayment, setRejectingPayment] = useState(false);
+  const [rejectionRemark, setRejectionRemark] = useState("");
 
   const fetchStudents = async () => {
     try {
@@ -70,7 +77,7 @@ export default function AdminStudentsPage() {
   };
 
   useEffect(() => {
-    fetchStudents();
+    queueMicrotask(() => { void fetchStudents(); });
   }, []);
 
   const handleAddStudent = async (e: React.FormEvent) => {
@@ -96,8 +103,8 @@ export default function AdminStudentsPage() {
         password: "Password123!",
       });
       fetchStudents();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to add student");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to add student");
     } finally {
       setAddLoading(false);
     }
@@ -111,11 +118,53 @@ export default function AdminStudentsPage() {
       toast.success("Student removed successfully.");
       setDeleteTarget(null);
       fetchStudents();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to delete student record");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete student record");
     } finally {
       setDeleting(false);
     }
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!paymentTarget) return;
+    try {
+      setConfirmingPayment(true);
+      await apiRequest(`/api/admin/confirm-payment/${paymentTarget.id}`, { method: "POST" });
+      toast.success("Student payment confirmed.");
+      setPaymentTarget(null);
+      await fetchStudents();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to confirm payment");
+    } finally {
+      setConfirmingPayment(false);
+    }
+  };
+
+  const handleRejectPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!paymentTarget || !rejectionRemark.trim()) return;
+    try {
+      setRejectingPayment(true);
+      await apiRequest(`/api/admin/reject-payment/${paymentTarget.id}`, {
+        method: "POST",
+        body: JSON.stringify({ remark: rejectionRemark.trim() }),
+      });
+      toast.success("Payment receipt rejected.");
+      setPaymentTarget(null);
+      setRejectionRemark("");
+      await fetchStudents();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to reject payment");
+    } finally {
+      setRejectingPayment(false);
+    }
+  };
+
+  const paymentStatus = (student: Student) => {
+    if (student.payment_confirmed) return { label: "Confirmed", variant: "success" as const };
+    if (student.payment_rejected) return { label: "Rejected", variant: "danger" as const };
+    if (student.payment_receipt_url) return { label: "Pending review", variant: "warning" as const };
+    return { label: "Not uploaded", variant: "muted" as const };
   };
 
   const filtered = students.filter((s) => {
@@ -243,6 +292,7 @@ export default function AdminStudentsPage() {
                     <th className="py-3 px-4">Level</th>
                     <th className="py-3 px-4">Faculty & Department</th>
                     <th className="py-3 px-4">Registration Status</th>
+                    <th className="py-3 px-4">Payment</th>
                     <th className="py-3 px-4">HC Number</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
@@ -276,6 +326,18 @@ export default function AdminStudentsPage() {
                           >
                             {s.registration_status || "Pending"}
                           </StatusBadge>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          {(() => {
+                            const status = paymentStatus(s);
+                            return <div className="space-y-1">
+                              <StatusBadge variant={status.variant}>{status.label}</StatusBadge>
+                              {s.payment_receipt_url && <div className="flex items-center gap-2 mt-1">
+                                <a href={s.payment_receipt_url} target="_blank" rel="noreferrer" className="text-[11px] text-blue-600 hover:underline">View receipt</a>
+                                {!s.payment_confirmed && !s.payment_rejected && <Button variant="outline" size="sm" className="h-7 px-2 text-[11px]" onClick={() => setPaymentTarget(s)}><ReceiptText size={12} /> Review</Button>}
+                              </div>}
+                            </div>;
+                          })()}
                         </td>
                         <td className="py-3.5 px-4 font-mono text-xs font-bold text-emerald-700">
                           {s.hc_number || "—"}
@@ -389,6 +451,31 @@ export default function AdminStudentsPage() {
           confirmLabel="Delete Student"
           loading={deleting}
         />
+
+        <Modal
+          open={!!paymentTarget}
+          onClose={() => { if (!confirmingPayment && !rejectingPayment) { setPaymentTarget(null); setRejectionRemark(""); } }}
+          title="Review Payment Receipt"
+          size="sm"
+        >
+          <div className="space-y-4">
+            <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+              <p className="font-semibold text-slate-900">{paymentTarget?.surname} {paymentTarget?.first_name}</p>
+              <p className="text-xs mt-1">{paymentTarget?.registration_number}</p>
+            </div>
+            {paymentTarget?.payment_receipt_url && <a href={paymentTarget.payment_receipt_url} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-blue-700 hover:bg-blue-50"><ReceiptText size={16} /> Open receipt</a>}
+            <div className="flex gap-2">
+              <Button className="flex-1" onClick={handleConfirmPayment} loading={confirmingPayment}>Confirm Payment</Button>
+              <Button variant="danger" className="flex-1" onClick={() => setRejectingPayment(true)} disabled={confirmingPayment || rejectingPayment}>Reject</Button>
+            </div>
+            {rejectingPayment && <form onSubmit={handleRejectPayment} className="space-y-3 border-t border-slate-100 pt-4">
+              <FormField label="Rejection reason" required>
+                <textarea className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500" rows={3} value={rejectionRemark} onChange={(e) => setRejectionRemark(e.target.value)} placeholder="Explain what the student should correct" required />
+              </FormField>
+              <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setRejectingPayment(false)}>Cancel</Button><Button type="submit" variant="danger" loading={rejectingPayment}>Reject Receipt</Button></div>
+            </form>}
+          </div>
+        </Modal>
       </div>
     </AuthenticatedLayout>
   );
