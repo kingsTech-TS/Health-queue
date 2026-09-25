@@ -47,7 +47,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { queueMicrotask(() => { void load(); }); }, []);
 
   const greeting = `${getGreeting()}, Administrator`;
 
@@ -97,7 +97,9 @@ export default function AdminDashboardPage() {
             <StatCard label="Total Students" value={stats.total_students} icon={<Users size={16} />} />
             <StatCard label="Registered" value={stats.completed_registrations} icon={<UserCheck size={16} />} variant="primary" />
             <StatCard label="Pending Reg." value={stats.pending_registrations} icon={<Clock size={16} />} />
-            <StatCard label="Pending Payments" value={stats.pending_payment_verifications} icon={<Clock size={16} />} />
+            <Link href="/admin/payments" className="block rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <StatCard label="Pending Payments" value={stats.pending_payment_verifications} sub="Review receipts" icon={<Clock size={16} />} />
+            </Link>
             <StatCard label="Active Staff" value={stats.active_staff} icon={<UserCheck size={16} />} />
             <StatCard label="Pending Approvals" value={stats.pending_staff_approvals} icon={<Clock size={16} />} />
             <StatCard label="Lab Records" value={stats.lab_records_count} icon={<FlaskConical size={16} />} />

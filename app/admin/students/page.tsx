@@ -32,6 +32,7 @@ interface Student {
   payment_confirmed?: boolean;
   payment_rejected?: boolean;
   payment_rejection_remark?: string | null;
+  payment_ai_review?: { decision?: string; confidence?: number; reason?: string } | null;
 }
 
 export default function AdminStudentsPage() {
@@ -332,13 +333,51 @@ export default function AdminStudentsPage() {
                         <td className="py-3.5 px-4">
                           {(() => {
                             const status = paymentStatus(s);
-                            return <div className="space-y-1">
-                              <StatusBadge variant={status.variant}>{status.label}</StatusBadge>
-                              {s.payment_receipt_url && <div className="flex items-center gap-2 mt-1">
-                                <a href={s.payment_receipt_url} target="_blank" rel="noreferrer" className="text-[11px] text-blue-600 hover:underline">View receipt</a>
-                                {!s.payment_confirmed && !s.payment_rejected && <Button variant="outline" size="sm" className="h-7 px-2 text-[11px]" onClick={() => setPaymentTarget(s)}><ReceiptText size={12} /> Review</Button>}
-                              </div>}
-                            </div>;
+                            const aiDec = s.payment_ai_review?.decision;
+                            return (
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <StatusBadge variant={status.variant}>{status.label}</StatusBadge>
+                                  {aiDec === "likely_valid" && (
+                                    <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded-full">
+                                      AI: Valid
+                                    </span>
+                                  )}
+                                  {aiDec === "likely_invalid" && (
+                                    <span className="text-[10px] font-semibold bg-red-50 text-red-700 border border-red-200 px-1.5 py-0.5 rounded-full">
+                                      AI: Suspicious
+                                    </span>
+                                  )}
+                                  {aiDec === "needs_manual_review" && (
+                                    <span className="text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-full">
+                                      AI: Review
+                                    </span>
+                                  )}
+                                </div>
+                                {s.payment_receipt_url && (
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <a
+                                      href={s.payment_receipt_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-[11px] text-blue-600 hover:underline"
+                                    >
+                                      View receipt
+                                    </a>
+                                    {!s.payment_confirmed && !s.payment_rejected && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-7 px-2 text-[11px]"
+                                        onClick={() => setPaymentTarget(s)}
+                                      >
+                                        <ReceiptText size={12} className="mr-1" /> Review
+                                      </Button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
                           })()}
                         </td>
                         <td className="py-3.5 px-4 font-mono text-xs font-bold text-emerald-700">

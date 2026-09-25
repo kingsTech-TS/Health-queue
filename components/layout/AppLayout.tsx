@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Users, UserCheck, CalendarDays, BarChart3,
   ClipboardList, Settings, LogOut, User as UserIcon, FlaskConical,
   Stethoscope, FileText, CreditCard, Activity, Menu, X, ChevronDown,
-  Clock, ShieldAlert, KeyRound
+  Clock, ShieldAlert, KeyRound, ReceiptText
 } from "lucide-react";
 import { StatusBadge, Button } from "@/components/ui/shared";
 
@@ -24,7 +24,6 @@ function getNavItems(user: User): NavItem[] {
     return [
       { label: "Dashboard", href: "/student/dashboard", icon: <LayoutDashboard size={16} /> },
       { label: "Registration", href: "/student/registration", icon: <ClipboardList size={16} /> },
-      { label: "Queue", href: "/student/queue", icon: <UserCheck size={16} /> },
       { label: "Pink File", href: "/student/pink-file", icon: <FileText size={16} /> },
       { label: "Health Card", href: "/student/health-card", icon: <CreditCard size={16} /> },
       { label: "Profile", href: "/student/profile", icon: <UserIcon size={16} /> },
@@ -35,6 +34,7 @@ function getNavItems(user: User): NavItem[] {
     return [
       { label: "Dashboard", href: "/admin/dashboard", icon: <LayoutDashboard size={16} /> },
       { label: "Students", href: "/admin/students", icon: <Users size={16} /> },
+      { label: "Payment Verification", href: "/admin/payments", icon: <ReceiptText size={16} /> },
       { label: "Staff", href: "/admin/staff", icon: <UserCheck size={16} /> },
       { label: "Registration Periods", href: "/admin/registration-periods", icon: <CalendarDays size={16} /> },
       { label: "Analytics", href: "/admin/analytics", icon: <BarChart3 size={16} /> },

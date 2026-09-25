@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { AuthenticatedLayout } from "@/components/layout/AppLayout";
 import { apiRequest } from "@/lib/utils";
-import { ErrorState, TableSkeleton, PageHeader, Button } from "@/components/ui/shared";
+import { TableSkeleton, PageHeader, Button } from "@/components/ui/shared";
+import { AlertCircle, ArrowRight, Printer } from "lucide-react";
+import Link from "next/link";
 
 interface HealthCardData {
   registration_number?: string;
@@ -20,38 +22,67 @@ interface HealthCardData {
 export default function HealthCardPage() {
   const [data, setData] = useState<HealthCardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
-    setError(false);
+    setError(null);
     try {
       const d = await apiRequest<HealthCardData>("/api/students/health-card");
       setData(d);
-    } catch {
-      setError(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to load health card";
+      setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { queueMicrotask(() => { void load(); }); }, []);
+  useEffect(() => {
+    queueMicrotask(() => {
+      void load();
+    });
+  }, []);
 
   return (
     <AuthenticatedLayout title="Health Center Card">
       <PageHeader
         title="Health Center Card"
         action={
-          <Button onClick={() => window.print()} variant="secondary" size="sm">
-            Print / Download
-          </Button>
+          data ? (
+            <Button onClick={() => window.print()} variant="secondary" size="sm">
+              <Printer size={14} className="mr-1.5" /> Print / Download
+            </Button>
+          ) : undefined
         }
       />
 
       {loading ? (
         <TableSkeleton rows={6} />
-      ) : error ? (
-        <ErrorState onRetry={load} />
+      ) : error || !data ? (
+        <div className="max-w-xl mx-auto my-12 bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
+          <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle size={24} />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900 mb-2">
+            Health Card Not Ready
+          </h2>
+          <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+            {error && error.toLowerCase().includes("case notes")
+              ? "Your case notes have not been completed yet. Once you complete the final registration step, your official Health Center Card will be issued automatically."
+              : "Your Health Center Registration must be completed through all required steps before your card is issued."}
+          </p>
+          <div className="flex justify-center gap-3">
+            <Link href="/student/registration">
+              <Button variant="primary">
+                Continue Registration <ArrowRight size={14} className="ml-1.5" />
+              </Button>
+            </Link>
+            <Button variant="outline" onClick={load}>
+              Check Again
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="max-w-2xl rounded-3xl bg-slate-200/80 p-5 sm:p-8 print:max-w-none print:bg-white print:p-0">
           <div
@@ -91,7 +122,7 @@ export default function HealthCardPage() {
               <div className="absolute bottom-5 right-8 text-right text-[8px] uppercase tracking-wider text-white/75 sm:text-[10px]">
                 <p>{data?.faculty || "Faculty"}</p>
                 <p>{data?.department || "Department"}</p>
-                </div>
+              </div>
               <div className="absolute bottom-5 left-8 text-[8px] uppercase tracking-wider text-white/75 sm:text-[10px]">
                 <p>H.C. {data?.hc_number || "—"}</p>
                 <p>Matric {data?.matric_number || data?.registration_number || "—"}</p>
@@ -113,4 +144,3 @@ export default function HealthCardPage() {
     </AuthenticatedLayout>
   );
 }
-

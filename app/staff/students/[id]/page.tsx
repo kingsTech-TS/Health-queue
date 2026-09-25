@@ -22,6 +22,8 @@ const ANTIBIOTICS_LIST = [
   "Nitrofurantoin", "Amoxicillin/Clavulanate", "Ciprofloxacin",
   "Ceftazidime", "Cefuroxime", "Ofloxacin", "Ceftriaxone", "Cloxacillin"
 ];
+const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+const GENOTYPES = ["AA", "AS", "AC", "SS", "SC"];
 
 export default function StudentRecordPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -778,19 +780,23 @@ export default function StudentRecordPage({ params }: { params: Promise<{ id: st
                 </FormField>
 
                 <FormField label="Blood Group">
-                  <Input
-                    placeholder="e.g. O+"
+                  <Select
                     value={examForm.blood_group}
                     onChange={(e) => setExamForm({ ...examForm, blood_group: e.target.value })}
-                  />
+                  >
+                    <option value="">Select blood group</option>
+                    {BLOOD_GROUPS.map((group) => <option key={group} value={group}>{group}</option>)}
+                  </Select>
                 </FormField>
 
                 <FormField label="Genotype">
-                  <Input
-                    placeholder="e.g. AA, AS"
+                  <Select
                     value={examForm.genotype}
                     onChange={(e) => setExamForm({ ...examForm, genotype: e.target.value })}
-                  />
+                  >
+                    <option value="">Select genotype</option>
+                    {GENOTYPES.map((genotype) => <option key={genotype} value={genotype}>{genotype}</option>)}
+                  </Select>
                 </FormField>
               </div>
             </div>

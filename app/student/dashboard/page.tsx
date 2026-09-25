@@ -32,8 +32,8 @@ interface DashboardData {
 const steps = [
   { key: "account", label: "Account Created", desc: "Your account has been set up" },
   { key: "basic_info", label: "Personal Information", desc: "Basic details completed" },
+  { key: "payment", label: "Payment Verification", desc: "Health center fee paid and confirmed" },
   { key: "passport", label: "Passport & Signature", desc: "Documents uploaded" },
-  { key: "payment", label: "Payment", desc: "Health center fee paid" },
   { key: "lab_request", label: "Laboratory Form", desc: "Lab request submitted" },
   { key: "lab_queue_attended", label: "Laboratory Queue", desc: "Laboratory visit attended" },
   { key: "med_questionnaire_submitted", label: "Medical History", desc: "Questionnaire submitted" },
@@ -152,7 +152,6 @@ export default function StudentDashboardPage() {
               <h2 className="text-base font-semibold text-slate-900">Quick Actions</h2>
               {[
                 { label: "Continue Registration", href: "/student/registration", show: !data?.onboarding?.registration_complete },
-                { label: "View Queue Status", href: "/student/queue", show: true },
                 { label: "View Pink File", href: "/student/pink-file", show: !!data?.case_notes?.hc_number },
                 { label: "My Profile", href: "/student/profile", show: true },
                 { label: "Health Center Card", href: "/student/health-card", show: data?.onboarding?.registration_complete },
