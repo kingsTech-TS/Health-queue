@@ -32,7 +32,7 @@ interface Student {
   payment_confirmed?: boolean;
   payment_rejected?: boolean;
   payment_rejection_remark?: string | null;
-  payment_ai_review?: { decision?: string; confidence?: number; reason?: string } | null;
+  payment_ai_review?: { decision?: string; confidence?: number | null; reason?: string; status?: string } | null;
 }
 
 export default function AdminStudentsPage() {

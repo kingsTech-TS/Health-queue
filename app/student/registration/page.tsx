@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { AuthenticatedLayout } from "@/components/layout/AppLayout";
+import { QueueTimingPanel } from "@/components/queue/QueueTiming";
 import { apiRequest } from "@/lib/utils";
 import {
   Button,
@@ -14,7 +16,17 @@ import {
   StatusBadge,
 } from "@/components/ui/shared";
 import { toast } from "sonner";
-import { CheckCircle2, Upload } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  FileText,
+  Lock,
+  RefreshCw,
+  Upload,
+  XCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const FACULTIES = [
@@ -144,134 +156,421 @@ const STEPS: { key: Step; label: string }[] = [
   { key: "done", label: "Complete" },
 ];
 
+// Form steps the backend locks after first submission.
+const LOCKED_FORM_STEPS = [0, 3, 5, 7];
+
+interface OnboardingStatus {
+  registration_period_active?: boolean;
+  message?: string;
+  basic_info_submitted?: boolean;
+  payment_uploaded?: boolean;
+  payment_confirmed?: boolean;
+  payment_rejected?: boolean;
+  payment_rejection_remark?: string | null;
+  payment_receipt_url?: string | null;
+  passport_uploaded?: boolean;
+  signature_uploaded?: boolean;
+  passport_url?: string | null;
+  signature_url?: string | null;
+  lab_form_submitted?: boolean;
+  lab_queue_attended?: boolean;
+  med_questionnaire_submitted?: boolean;
+  physical_reg_queue_attended?: boolean;
+  case_notes_submitted?: boolean;
+  registration_complete?: boolean;
+}
+
+type PaymentState = "none" | "pending" | "confirmed" | "rejected";
+
+function paymentStateOf(status: OnboardingStatus | null): PaymentState {
+  if (!status) return "none";
+  if (status.payment_confirmed) return "confirmed";
+  if (status.payment_rejected) return "rejected";
+  if (status.payment_uploaded) return "pending";
+  return "none";
+}
+
+function completedStepsOf(status: OnboardingStatus): number[] {
+  const checks = [
+    status.basic_info_submitted,
+    status.payment_confirmed,
+    status.passport_uploaded && status.signature_uploaded,
+    status.lab_form_submitted,
+    status.lab_queue_attended,
+    status.med_questionnaire_submitted,
+    status.physical_reg_queue_attended,
+    status.case_notes_submitted,
+    status.registration_complete,
+  ];
+  return checks.flatMap((done, i) => (done ? [i] : []));
+}
+
+// Personal info stores "Male"/"Female"; later forms use "M"/"F".
+function toSexCode(sex: string) {
+  return sex === "Male" ? "M" : sex === "Female" ? "F" : sex;
+}
+
+function isPdfUrl(url: string) {
+  return /\.pdf(?:$|[?#])/i.test(url);
+}
+
 function StepIndicator({
   current,
   completed,
+  reachable,
+  paymentState,
+  onSelect,
 }: {
   current: number;
   completed: number[];
+  reachable: number;
+  paymentState: PaymentState;
+  onSelect: (index: number) => void;
 }) {
-  return (
-    <div className="flex items-center gap-1 mb-8 overflow-x-auto pb-2">
-      {STEPS.map((step, i) => {
-        const done = completed.includes(i);
-        const active = i === current;
-        return (
-          <div key={step.key} className="flex items-center gap-1">
-            <div
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap",
-                done
-                  ? "bg-emerald-100 text-emerald-700"
-                  : active
-                    ? "bg-emerald-600 text-white"
-                    : "bg-slate-100 text-slate-400",
-              )}
-            >
-              {done && <CheckCircle2 size={12} />}
-              <span>
-                {i + 1}. {step.label}
-              </span>
-            </div>
-            {i < STEPS.length - 1 && (
-              <div className="w-4 h-px bg-slate-200 shrink-0" />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+  const doneCount = completed.filter((i) => i < STEPS.length - 1).length;
+  const percent = Math.round((doneCount / (STEPS.length - 1)) * 100);
 
-function FileUploadField({
-  label,
-  onUpload,
-  uploaded,
-}: {
-  label: string;
-  onUpload: (file: File) => Promise<void>;
-  uploaded: boolean;
-}) {
-  const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
-
-  const handle = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPreview(URL.createObjectURL(file));
-    setLoading(true);
-    try {
-      await onUpload(file);
-      toast.success(`${label} uploaded successfully`);
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setLoading(false);
-    }
+  const hintFor = (i: number) => {
+    if (i !== 1 || completed.includes(1)) return null;
+    if (paymentState === "pending") return { text: "Under review", tone: "text-amber-600" };
+    if (paymentState === "rejected") return { text: "Rejected", tone: "text-red-600" };
+    return null;
   };
 
   return (
-    <div>
-      <label className="block text-sm font-medium text-slate-700 mb-2">
-        {label}
-      </label>
-      <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-emerald-300 transition">
-        {preview ? (
-          <div className="space-y-3">
-            <img
-              src={preview}
-              alt="Preview"
-              className="h-32 w-24 object-cover rounded-lg mx-auto border border-slate-200"
-            />
-            <label className="cursor-pointer text-xs text-emerald-700 hover:underline">
-              Replace image{" "}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handle}
-                className="hidden"
-              />
-            </label>
-          </div>
-        ) : (
-          <label className="cursor-pointer space-y-2 block">
-            <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
-              <Upload size={18} />
-            </div>
-            <p className="text-sm text-slate-500">
-              Drop file or{" "}
-              <span className="text-emerald-700 font-medium">browse</span>
-            </p>
-            <p className="text-xs text-slate-400">JPG, PNG, max 5MB</p>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handle}
-              className="hidden"
-            />
-          </label>
-        )}
-        {loading && (
-          <div className="mt-2 h-1 bg-emerald-200 rounded animate-pulse" />
-        )}
-        {uploaded && !loading && !preview && (
-          <p className="mt-2 text-xs text-emerald-600">✓ Already uploaded</p>
-        )}
+    <nav aria-label="Registration progress" className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="mb-3 flex items-center justify-between text-xs">
+        <span className="font-semibold text-slate-700">
+          Step {current + 1} of {STEPS.length}
+        </span>
+        <span className="text-slate-500">{percent}% complete</span>
+      </div>
+      <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-slate-100">
+        <div
+          className="h-full rounded-full bg-emerald-500 transition-all"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+
+      <ol className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0">
+        {STEPS.map((step, i) => {
+          const done = completed.includes(i);
+          const active = i === current;
+          const locked = i > reachable;
+          const hint = hintFor(i);
+          return (
+            <li key={step.key} className="shrink-0">
+              <button
+                type="button"
+                disabled={locked}
+                onClick={() => onSelect(i)}
+                aria-current={active ? "step" : undefined}
+                className={cn(
+                  "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs transition",
+                  active && "bg-emerald-50 ring-1 ring-emerald-200",
+                  !active && !locked && "hover:bg-slate-50",
+                  locked && "cursor-not-allowed opacity-60",
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+                    done
+                      ? "bg-emerald-500 text-white"
+                      : active
+                        ? "bg-emerald-600 text-white"
+                        : "bg-slate-100 text-slate-500",
+                  )}
+                >
+                  {done ? (
+                    <CheckCircle2 size={14} />
+                  ) : locked ? (
+                    <Lock size={11} />
+                  ) : (
+                    i + 1
+                  )}
+                </span>
+                <span className="min-w-0">
+                  <span
+                    className={cn(
+                      "block whitespace-nowrap font-medium",
+                      active ? "text-emerald-800" : done ? "text-slate-700" : "text-slate-500",
+                    )}
+                  >
+                    {step.label}
+                  </span>
+                  {hint && (
+                    <span className={cn("block whitespace-nowrap text-[10px] font-medium", hint.tone)}>
+                      {hint.text}
+                    </span>
+                  )}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+function StepCard({
+  step,
+  title,
+  description,
+  children,
+  footer,
+}: {
+  step: number;
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <header className="border-b border-slate-100 px-5 py-4 sm:px-6">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-600">
+          Step {step + 1}
+        </p>
+        <h2 className="mt-0.5 text-base font-semibold text-slate-900">{title}</h2>
+        {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+      </header>
+      <div className="px-5 py-5 sm:px-6">{children}</div>
+      {footer && (
+        <footer className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          {footer}
+        </footer>
+      )}
+    </section>
+  );
+}
+
+function Notice({
+  tone,
+  icon,
+  title,
+  children,
+}: {
+  tone: "success" | "warning" | "danger" | "info";
+  icon: React.ReactNode;
+  title: string;
+  children?: React.ReactNode;
+}) {
+  const styles = {
+    success: "border-emerald-200 bg-emerald-50 text-emerald-900",
+    warning: "border-amber-200 bg-amber-50 text-amber-900",
+    danger: "border-red-200 bg-red-50 text-red-900",
+    info: "border-blue-200 bg-blue-50 text-blue-900",
+  };
+  return (
+    <div className={cn("flex gap-3 rounded-xl border p-4", styles[tone])}>
+      <span className="mt-0.5 shrink-0">{icon}</span>
+      <div className="min-w-0 text-sm">
+        <p className="font-semibold">{title}</p>
+        {children && <div className="mt-1 leading-relaxed opacity-90">{children}</div>}
       </div>
     </div>
   );
 }
 
+function UploadDropzone({
+  accept,
+  hint,
+  uploading,
+  onFile,
+  label = "Choose file",
+}: {
+  accept: string;
+  hint: string;
+  uploading: boolean;
+  onFile: (file: File) => void;
+  label?: string;
+}) {
+  return (
+    <label
+      className={cn(
+        "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 px-4 py-8 text-center transition hover:border-emerald-300 hover:bg-emerald-50/30",
+        uploading && "pointer-events-none opacity-70",
+      )}
+    >
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+        {uploading ? (
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+        ) : (
+          <Upload size={18} />
+        )}
+      </span>
+      <span className="text-sm text-slate-600">
+        {uploading ? (
+          "Uploading…"
+        ) : (
+          <>
+            <span className="font-medium text-emerald-700">{label}</span> to upload
+          </>
+        )}
+      </span>
+      <span className="text-xs text-slate-400">{hint}</span>
+      <input
+        type="file"
+        accept={accept}
+        className="hidden"
+        disabled={uploading}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (file) onFile(file);
+        }}
+      />
+    </label>
+  );
+}
+
+function DocumentUploadCard({
+  label,
+  description,
+  existingUrl,
+  onUpload,
+}: {
+  label: string;
+  description: string;
+  existingUrl?: string | null;
+  onUpload: (file: File) => Promise<void>;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const imageUrl = preview || existingUrl || null;
+  const uploaded = Boolean(existingUrl) && !uploading;
+
+  const handle = async (file: File) => {
+    const localUrl = URL.createObjectURL(file);
+    setPreview(localUrl);
+    setUploading(true);
+    try {
+      await onUpload(file);
+      toast.success(`${label} uploaded successfully`);
+    } catch (err: unknown) {
+      setPreview(null);
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col rounded-xl border p-4 transition",
+        uploaded ? "border-emerald-200 bg-emerald-50/40" : "border-slate-200",
+      )}
+    >
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-slate-800">{label}</p>
+          <p className="text-xs text-slate-500">{description}</p>
+        </div>
+        {uploading ? (
+          <StatusBadge variant="info">Uploading…</StatusBadge>
+        ) : uploaded ? (
+          <StatusBadge variant="success">
+            <CheckCircle2 size={12} /> Uploaded
+          </StatusBadge>
+        ) : (
+          <StatusBadge variant="muted">Required</StatusBadge>
+        )}
+      </div>
+
+      {imageUrl ? (
+        <div className="flex flex-1 flex-col items-center gap-3">
+          <div className="relative">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt={`${label} preview`}
+              className="h-40 w-32 rounded-lg border border-slate-200 bg-white object-contain"
+            />
+            {uploading && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-white/70">
+                <span className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+              </div>
+            )}
+            {uploaded && (
+              <span className="absolute -right-2 -top-2 rounded-full bg-white text-emerald-500 shadow">
+                <CheckCircle2 size={22} />
+              </span>
+            )}
+          </div>
+          <label
+            className={cn(
+              "inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50",
+              uploading && "pointer-events-none opacity-50",
+            )}
+          >
+            <RefreshCw size={12} /> Replace
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={uploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) void handle(file);
+              }}
+            />
+          </label>
+        </div>
+      ) : (
+        <UploadDropzone
+          accept="image/*"
+          hint="JPG or PNG, max 5MB"
+          uploading={uploading}
+          onFile={(file) => void handle(file)}
+        />
+      )}
+    </div>
+  );
+}
+
+function AlreadySubmitted({
+  step,
+  title,
+  onContinue,
+}: {
+  step: number;
+  title: string;
+  onContinue: () => void;
+}) {
+  return (
+    <StepCard
+      step={step}
+      title={title}
+      footer={
+        <>
+          <span />
+          <Button onClick={onContinue}>Continue</Button>
+        </>
+      }
+    >
+      <Notice
+        tone="success"
+        icon={<CheckCircle2 size={18} className="text-emerald-600" />}
+        title="Already submitted"
+      >
+        This form has been submitted and can no longer be edited.
+      </Notice>
+    </StepCard>
+  );
+}
+
 export default function StudentRegistrationPage() {
+  const [status, setStatus] = useState<OnboardingStatus | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [completed, setCompleted] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [paymentRejected, setPaymentRejected] = useState(false);
-  const [paymentRejectionRemark, setPaymentRejectionRemark] = useState<
-    string | undefined
-  >();
+  const prevPaymentState = useRef<PaymentState | null>(null);
 
   // BasicInfo form
   const [basicInfo, setBasicInfo] = useState({
@@ -294,35 +593,39 @@ export default function StudentRegistrationPage() {
   const setBi = (k: string, v: string) =>
     setBasicInfo((f) => ({ ...f, [k]: v }));
 
+  // Fetch onboarding status without the full-page spinner. When `advance` is
+  // set, jump to the first incomplete step.
+  const refreshStatus = useCallback(async (advance = false) => {
+    const next = await apiRequest<OnboardingStatus>(
+      "/api/students/onboarding-status",
+    );
+    const done = completedStepsOf(next);
+    setStatus(next);
+    setCompleted(done);
+
+    const payment = paymentStateOf(next);
+    const previous = prevPaymentState.current;
+    if (previous === "pending" && payment === "confirmed") {
+      toast.success("Your payment has been confirmed. You can now continue.");
+    } else if (previous === "pending" && payment === "rejected") {
+      toast.error("Your payment receipt was rejected. Please upload a new one.");
+      setCurrentStep(1);
+    }
+    prevPaymentState.current = payment;
+
+    if (advance) {
+      setCurrentStep(
+        [0, 1, 2, 3, 4, 5, 6, 7, 8].find((i) => !done.includes(i)) ?? 8,
+      );
+    }
+    return next;
+  }, []);
+
   const load = async () => {
     setLoading(true);
+    setError(false);
     try {
-      const status = await apiRequest<Record<string, unknown>>(
-        "/api/students/onboarding-status",
-      );
-      const isDone = (key: string) => Boolean(status[key]);
-      setPaymentRejected(Boolean(status.payment_rejected));
-      setPaymentRejectionRemark(
-        typeof status.payment_rejection_remark === "string"
-          ? status.payment_rejection_remark
-          : undefined,
-      );
-      const done: number[] = [];
-      if (isDone("basic_info_submitted")) done.push(0);
-      if (isDone("payment_confirmed")) done.push(1);
-      if (isDone("passport_uploaded") && isDone("signature_uploaded"))
-        done.push(2);
-      if (isDone("lab_form_submitted")) done.push(3);
-      if (isDone("lab_queue_attended")) done.push(4);
-      if (isDone("med_questionnaire_submitted")) done.push(5);
-      if (isDone("physical_reg_queue_attended")) done.push(6);
-      if (isDone("case_notes_submitted")) done.push(7);
-      if (isDone("registration_complete")) done.push(8);
-      setCompleted(done);
-      // Set starting step
-      const firstIncomplete =
-        [0, 1, 2, 3, 4, 5, 6, 7, 8].find((i) => !done.includes(i)) ?? 8;
-      setCurrentStep(firstIncomplete);
+      await refreshStatus(true);
 
       // Prefill basic info if it exists
       try {
@@ -352,10 +655,31 @@ export default function StudentRegistrationPage() {
     queueMicrotask(() => {
       void load();
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const paymentState = paymentStateOf(status);
+
+  // While a receipt is under review, poll so the student sees the admin's
+  // decision without reloading.
+  useEffect(() => {
+    if (currentStep !== 1 || paymentState !== "pending") return;
+    const timer = setInterval(() => {
+      void refreshStatus().catch(() => {});
+    }, 20000);
+    return () => clearInterval(timer);
+  }, [currentStep, paymentState, refreshStatus]);
 
   const markDone = (idx: number) =>
     setCompleted((prev) => Array.from(new Set([...prev, idx])));
+
+  const reachable =
+    [0, 1, 2, 3, 4, 5, 6, 7, 8].find((i) => !completed.includes(i)) ?? 8;
+
+  const goTo = (step: number) => {
+    setCurrentStep(step);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const saveBasicInfo = async () => {
     setSaving(true);
@@ -365,7 +689,7 @@ export default function StudentRegistrationPage() {
         body: JSON.stringify({ ...basicInfo, age: Number(basicInfo.age) }),
       });
       markDone(0);
-      setCurrentStep(1);
+      goTo(1);
       toast.success("Personal information saved!");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Save failed");
@@ -393,295 +717,528 @@ export default function StudentRegistrationPage() {
       </AuthenticatedLayout>
     );
 
+  const documentsReady = Boolean(
+    status?.passport_uploaded && status?.signature_uploaded,
+  );
+  const showLocked =
+    LOCKED_FORM_STEPS.includes(currentStep) && completed.includes(currentStep);
+
   return (
     <AuthenticatedLayout title="Registration">
       <PageHeader
         title="Registration"
         subtitle="Complete all steps to finish your health center registration"
       />
-      <div className="max-w-2xl">
-        <StepIndicator current={currentStep} completed={completed} />
 
-        {/* Step 0: Basic Info */}
-        {currentStep === 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-base font-semibold text-slate-900 mb-5">
-              Personal Information
-            </h2>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField label="Surname" required>
-                <Input
-                  value={basicInfo.surname}
-                  onChange={(e) => setBi("surname", e.target.value)}
-                  placeholder="Surname"
-                />
-              </FormField>
-              <FormField label="First Name" required>
-                <Input
-                  value={basicInfo.first_name}
-                  onChange={(e) => setBi("first_name", e.target.value)}
-                  placeholder="First name"
-                />
-              </FormField>
-              <FormField label="Other Name">
-                <Input
-                  value={basicInfo.last_name}
-                  onChange={(e) => setBi("last_name", e.target.value)}
-                  placeholder="Other name"
-                />
-              </FormField>
-              <FormField label="Age" required>
-                <Input
-                  type="number"
-                  value={basicInfo.age}
-                  onChange={(e) => setBi("age", e.target.value)}
-                  placeholder="Age"
-                />
-              </FormField>
-              <FormField label="Date of Birth">
-                <Input
-                  type="date"
-                  value={basicInfo.date_of_birth}
-                  onChange={(e) => setBi("date_of_birth", e.target.value)}
-                />
-              </FormField>
-              <FormField label="Sex">
-                <Select
-                  value={basicInfo.sex}
-                  onChange={(e) => setBi("sex", e.target.value)}
+      {status?.message && (
+        <div className="mb-4">
+          <Notice
+            tone="info"
+            icon={<AlertCircle size={18} className="text-blue-600" />}
+            title="Registration notice"
+          >
+            {status.message}
+          </Notice>
+        </div>
+      )}
+
+      <div className="grid gap-5 lg:grid-cols-[230px_minmax(0,1fr)] lg:items-start">
+        <div className="lg:sticky lg:top-4">
+          <StepIndicator
+            current={currentStep}
+            completed={completed}
+            reachable={reachable}
+            paymentState={paymentState}
+            onSelect={goTo}
+          />
+        </div>
+
+        <div className="min-w-0 max-w-3xl">
+          {showLocked ? (
+            <AlreadySubmitted
+              step={currentStep}
+              title={STEPS[currentStep].label}
+              onContinue={() => goTo(Math.min(currentStep + 1, reachable))}
+            />
+          ) : (
+            <>
+              {/* Step 0: Basic Info */}
+              {currentStep === 0 && (
+                <StepCard
+                  step={0}
+                  title="Personal Information"
+                  description="Tell us about yourself. This information is used across your health records."
+                  footer={
+                    <>
+                      <span />
+                      <Button onClick={saveBasicInfo} loading={saving}>
+                        Save & Continue
+                      </Button>
+                    </>
+                  }
                 >
-                  <option value="">Select</option>
-                  <option>Male</option>
-                  <option>Female</option>
-                </Select>
-              </FormField>
-              <FormField label="Nationality" required>
-                <Input
-                  value={basicInfo.nationality}
-                  onChange={(e) => setBi("nationality", e.target.value)}
-                  placeholder="e.g. Nigerian"
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <FormField label="Surname" required>
+                      <Input
+                        value={basicInfo.surname}
+                        onChange={(e) => setBi("surname", e.target.value)}
+                        placeholder="Surname"
+                      />
+                    </FormField>
+                    <FormField label="First Name" required>
+                      <Input
+                        value={basicInfo.first_name}
+                        onChange={(e) => setBi("first_name", e.target.value)}
+                        placeholder="First name"
+                      />
+                    </FormField>
+                    <FormField label="Other Name">
+                      <Input
+                        value={basicInfo.last_name}
+                        onChange={(e) => setBi("last_name", e.target.value)}
+                        placeholder="Other name"
+                      />
+                    </FormField>
+                    <FormField label="Age" required>
+                      <Input
+                        type="number"
+                        value={basicInfo.age}
+                        onChange={(e) => setBi("age", e.target.value)}
+                        placeholder="Age"
+                      />
+                    </FormField>
+                    <FormField label="Date of Birth">
+                      <Input
+                        type="date"
+                        value={basicInfo.date_of_birth}
+                        onChange={(e) => setBi("date_of_birth", e.target.value)}
+                      />
+                    </FormField>
+                    <FormField label="Sex">
+                      <Select
+                        value={basicInfo.sex}
+                        onChange={(e) => setBi("sex", e.target.value)}
+                      >
+                        <option value="">Select</option>
+                        <option>Male</option>
+                        <option>Female</option>
+                      </Select>
+                    </FormField>
+                    <FormField label="Nationality" required>
+                      <Input
+                        value={basicInfo.nationality}
+                        onChange={(e) => setBi("nationality", e.target.value)}
+                        placeholder="e.g. Nigerian"
+                      />
+                    </FormField>
+                    <FormField label="State of Origin" required>
+                      <Select
+                        required
+                        value={basicInfo.state_of_origin}
+                        onChange={(e) => setBi("state_of_origin", e.target.value)}
+                      >
+                        <option value="">Select state</option>
+                        <Options values={NIGERIAN_STATES} />
+                      </Select>
+                    </FormField>
+                    <FormField label="Religion" required>
+                      <Select
+                        value={basicInfo.religion}
+                        onChange={(e) => setBi("religion", e.target.value)}
+                      >
+                        <option value="">Select</option>
+                        <option>Christianity</option>
+                        <option>Islam</option>
+                        <option>Traditional</option>
+                        <option>Other</option>
+                      </Select>
+                    </FormField>
+                    <FormField label="Marital Status" required>
+                      <Select
+                        value={basicInfo.marital_status}
+                        onChange={(e) => setBi("marital_status", e.target.value)}
+                      >
+                        <option value="">Select</option>
+                        <option>Single</option>
+                        <option>Married</option>
+                        <option>Divorced</option>
+                        <option>Widowed</option>
+                      </Select>
+                    </FormField>
+                    <FormField label="Phone Number">
+                      <Input
+                        value={basicInfo.phone_number}
+                        onChange={(e) => setBi("phone_number", e.target.value)}
+                        placeholder="080..."
+                      />
+                    </FormField>
+                    <FormField label="Faculty">
+                      <Select
+                        required
+                        value={basicInfo.faculty}
+                        onChange={(e) => setBi("faculty", e.target.value)}
+                      >
+                        <option value="">Select faculty</option>
+                        <Options values={FACULTIES} />
+                      </Select>
+                    </FormField>
+                    <div className="sm:col-span-2">
+                      <FormField label="Department" required>
+                        <Select
+                          required
+                          value={basicInfo.department}
+                          onChange={(e) => setBi("department", e.target.value)}
+                        >
+                          <option value="">Select department</option>
+                          <Options values={DEPARTMENTS} />
+                        </Select>
+                      </FormField>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <FormField label="Home Address">
+                        <Textarea
+                          value={basicInfo.home_address}
+                          onChange={(e) => setBi("home_address", e.target.value)}
+                          placeholder="Home address"
+                        />
+                      </FormField>
+                    </div>
+                  </div>
+                </StepCard>
+              )}
+
+              {/* Step 1: Payment */}
+              {currentStep === 1 && (
+                <PaymentStep
+                  state={paymentState}
+                  receiptUrl={status?.payment_receipt_url}
+                  rejectionRemark={status?.payment_rejection_remark}
+                  onCheckStatus={async () => {
+                    await refreshStatus();
+                  }}
+                  onUpload={async (file) => {
+                    await uploadFile("/api/students/upload-payment-receipt", file);
+                    toast.success("Receipt uploaded. It is now under review.");
+                    await refreshStatus();
+                  }}
+                  onBack={() => goTo(0)}
+                  onContinue={() => goTo(2)}
                 />
-              </FormField>
-              <FormField label="State of Origin" required>
-                <Select
-                  required
-                  value={basicInfo.state_of_origin}
-                  onChange={(e) => setBi("state_of_origin", e.target.value)}
+              )}
+
+              {/* Step 2: Documents */}
+              {currentStep === 2 && (
+                <StepCard
+                  step={2}
+                  title="Upload Documents"
+                  description="Upload a recent passport photograph and a clear signature on a white background."
+                  footer={
+                    <>
+                      <Button variant="secondary" onClick={() => goTo(1)}>
+                        Back
+                      </Button>
+                      <div className="flex flex-col items-stretch gap-1 sm:items-end">
+                        <Button
+                          disabled={!documentsReady}
+                          onClick={() => {
+                            markDone(2);
+                            goTo(3);
+                          }}
+                        >
+                          Continue
+                        </Button>
+                        {!documentsReady && (
+                          <span className="text-center text-[11px] text-slate-500 sm:text-right">
+                            Upload both documents to continue
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  }
                 >
-                  <option value="">Select state</option>
-                  <Options values={NIGERIAN_STATES} />
-                </Select>
-              </FormField>
-              <FormField label="Religion" required>
-                <Select
-                  value={basicInfo.religion}
-                  onChange={(e) => setBi("religion", e.target.value)}
-                >
-                  <option value="">Select</option>
-                  <option>Christianity</option>
-                  <option>Islam</option>
-                  <option>Traditional</option>
-                  <option>Other</option>
-                </Select>
-              </FormField>
-              <FormField label="Marital Status" required>
-                <Select
-                  value={basicInfo.marital_status}
-                  onChange={(e) => setBi("marital_status", e.target.value)}
-                >
-                  <option value="">Select</option>
-                  <option>Single</option>
-                  <option>Married</option>
-                  <option>Divorced</option>
-                  <option>Widowed</option>
-                </Select>
-              </FormField>
-              <FormField label="Phone Number">
-                <Input
-                  value={basicInfo.phone_number}
-                  onChange={(e) => setBi("phone_number", e.target.value)}
-                  placeholder="080..."
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <DocumentUploadCard
+                      label="Passport Photograph"
+                      description="Front-facing, plain background"
+                      existingUrl={status?.passport_url}
+                      onUpload={async (file) => {
+                        await uploadFile("/api/students/upload-passport", file);
+                        await refreshStatus();
+                      }}
+                    />
+                    <DocumentUploadCard
+                      label="Signature"
+                      description="Sign on white paper and snap it"
+                      existingUrl={status?.signature_url}
+                      onUpload={async (file) => {
+                        await uploadFile("/api/students/upload-signature", file);
+                        await refreshStatus();
+                      }}
+                    />
+                  </div>
+                </StepCard>
+              )}
+
+              {/* Step 3: Lab Form */}
+              {currentStep === 3 && (
+                <LabFormStep
+                  basicInfo={basicInfo}
+                  onBack={() => goTo(2)}
+                  onDone={() => {
+                    markDone(3);
+                    goTo(4);
+                  }}
                 />
-              </FormField>
-              <FormField label="Faculty">
-                <Select
-                  required
-                  value={basicInfo.faculty}
-                  onChange={(e) => setBi("faculty", e.target.value)}
-                >
-                  <option value="">Select faculty</option>
-                  <Options values={FACULTIES} />
-                </Select>
-              </FormField>
-              <div className="col-span-2">
-                <FormField label="Department" required>
-                  <Select
-                    required
-                    value={basicInfo.department}
-                    onChange={(e) => setBi("department", e.target.value)}
-                  >
-                    <option value="">Select department</option>
-                    <Options values={DEPARTMENTS} />
-                  </Select>
-                </FormField>
-              </div>
-              <div className="col-span-2">
-                <FormField label="Home Address">
-                  <Textarea
-                    value={basicInfo.home_address}
-                    onChange={(e) => setBi("home_address", e.target.value)}
-                    placeholder="Home address"
-                  />
-                </FormField>
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end">
-              <Button onClick={saveBasicInfo} loading={saving}>
-                Save & Continue
-              </Button>
-            </div>
-          </div>
-        )}
+              )}
 
-        {/* Step 1: Payment */}
-        {currentStep === 1 && (
-          <PaymentStep
-            uploaded={Boolean(completed.includes(1))}
-            rejected={paymentRejected}
-            rejectionRemark={paymentRejectionRemark}
-            onUpload={async (file) => {
-              await uploadFile("/api/students/upload-payment-receipt", file);
-              toast.success(
-                "Receipt uploaded. Waiting for admin confirmation.",
-              );
-              await load();
-            }}
-          />
-        )}
+              {currentStep === 4 && (
+                <QueueStep
+                  step={4}
+                  title="Laboratory Queue"
+                  description="Join the laboratory queue when a session is active. Your lab result is recorded by the lab attendant."
+                  queueType="lab_test"
+                  onBack={() => goTo(3)}
+                  onDone={() => {
+                    void refreshStatus(true).catch(() => {});
+                  }}
+                />
+              )}
 
-        {/* Step 2: Documents */}
-        {currentStep === 2 && (
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-base font-semibold text-slate-900 mb-5">
-              Upload Documents
-            </h2>
-            <div className="grid grid-cols-2 gap-6">
-              <FileUploadField
-                label="Passport Photograph"
-                uploaded={Boolean(completed.includes(2))}
-                onUpload={async (file) => {
-                  await uploadFile("/api/students/upload-passport", file);
-                  await load();
-                }}
-              />
-              <FileUploadField
-                label="Signature"
-                uploaded={Boolean(completed.includes(2))}
-                onUpload={async (file) => {
-                  await uploadFile("/api/students/upload-signature", file);
-                }}
-              />
-            </div>
-            <div className="mt-6 flex justify-between">
-              <Button variant="secondary" onClick={() => setCurrentStep(1)}>
-                Back
-              </Button>
-              <Button
-                onClick={() => {
-                  setCurrentStep(3);
-                }}
-              >
-                Continue
-              </Button>
-            </div>
-          </div>
-        )}
+              {currentStep === 5 && (
+                <MedicalQuestionnaireStep
+                  basicInfo={basicInfo}
+                  onBack={() => goTo(4)}
+                  onDone={() => {
+                    markDone(5);
+                    goTo(6);
+                  }}
+                />
+              )}
 
-        {/* Step 3: Lab Form */}
-        {currentStep === 3 && (
-          <LabFormStep
-            basicInfo={basicInfo}
-            onBack={() => setCurrentStep(2)}
-            onDone={() => {
-              markDone(3);
-              setCurrentStep(4);
-            }}
-          />
-        )}
+              {currentStep === 6 && (
+                <QueueStep
+                  step={6}
+                  title="Physical Registration Queue"
+                  description="Join the physical registration queue after your medical questionnaire is submitted."
+                  queueType="physical_registration"
+                  onBack={() => goTo(5)}
+                  onDone={() => {
+                    void refreshStatus(true).catch(() => {});
+                  }}
+                />
+              )}
 
-        {currentStep === 4 && (
-          <QueueStep
-            title="Laboratory Queue"
-            description="Join the laboratory queue when a session is active. Your lab result is recorded by the lab attendant."
-            queueType="lab_test"
-            onBack={() => setCurrentStep(3)}
-            onDone={() => {
-              void load();
-            }}
-          />
-        )}
+              {/* Step 7: Case Notes */}
+              {currentStep === 7 && (
+                <CaseNotesStep
+                  basicInfo={basicInfo}
+                  onBack={() => goTo(6)}
+                  onDone={() => {
+                    markDone(7);
+                    goTo(8);
+                  }}
+                />
+              )}
 
-        {currentStep === 5 && (
-          <MedicalQuestionnaireStep
-            basicInfo={basicInfo}
-            onBack={() => setCurrentStep(4)}
-            onDone={() => {
-              markDone(5);
-              setCurrentStep(6);
-            }}
-          />
-        )}
-
-        {currentStep === 6 && (
-          <QueueStep
-            title="Physical Registration Queue"
-            description="Join the physical registration queue after your medical questionnaire is submitted."
-            queueType="physical_registration"
-            onBack={() => setCurrentStep(5)}
-            onDone={() => {
-              void load();
-            }}
-          />
-        )}
-
-        {/* Step 7: Case Notes */}
-        {currentStep === 7 && (
-          <CaseNotesStep
-            basicInfo={basicInfo}
-            onBack={() => setCurrentStep(6)}
-            onDone={() => {
-              markDone(7);
-              setCurrentStep(8);
-            }}
-          />
-        )}
-
-        {/* Step 8: Complete */}
-        {currentStep === 8 && (
-          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
-            <CheckCircle2 size={48} className="text-emerald-500 mx-auto mb-4" />
-            <h2 className="text-lg font-bold text-slate-900 mb-2">
-              Registration Complete!
-            </h2>
-            <p className="text-sm text-slate-500 mb-6">
-              Your registration is complete. You can now join the queue when
-              sessions are available.
-            </p>
-            <div className="flex justify-center gap-3">
-              <Button
-                onClick={() => (window.location.href = "/student/dashboard")}
-                variant="secondary"
-              >
-                Go to Dashboard
-              </Button>
-              <Button onClick={() => (window.location.href = "/student/queue")}>
-                View Queues
-              </Button>
-            </div>
-          </div>
-        )}
+              {/* Step 8: Complete */}
+              {currentStep === 8 && (
+                <section className="rounded-xl border border-slate-200 bg-white p-8 text-center">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
+                    <CheckCircle2 size={36} className="text-emerald-500" />
+                  </div>
+                  <h2 className="text-lg font-bold text-slate-900 mb-2">
+                    Registration Complete!
+                  </h2>
+                  <p className="mx-auto max-w-sm text-sm text-slate-500 mb-6">
+                    Your registration is complete. You can now join the queue
+                    when sessions are available.
+                  </p>
+                  <div className="flex flex-col justify-center gap-3 sm:flex-row">
+                    <Link href="/student/dashboard">
+                      <Button variant="secondary" className="w-full">
+                        Go to Dashboard
+                      </Button>
+                    </Link>
+                    <Link href="/student/queue">
+                      <Button className="w-full">View Queues</Button>
+                    </Link>
+                  </div>
+                </section>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </AuthenticatedLayout>
+  );
+}
+
+function PaymentStep({
+  state,
+  receiptUrl,
+  rejectionRemark,
+  onUpload,
+  onCheckStatus,
+  onBack,
+  onContinue,
+}: {
+  state: PaymentState;
+  receiptUrl?: string | null;
+  rejectionRemark?: string | null;
+  onUpload: (file: File) => Promise<void>;
+  onCheckStatus: () => Promise<void>;
+  onBack: () => void;
+  onContinue: () => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [checking, setChecking] = useState(false);
+
+  const upload = async (file: File) => {
+    setUploading(true);
+    try {
+      await onUpload(file);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const check = async () => {
+    setChecking(true);
+    try {
+      await onCheckStatus();
+    } catch {
+      toast.error("Could not check payment status. Try again.");
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  return (
+    <StepCard
+      step={1}
+      title="Payment Receipt"
+      description="Upload your health center payment receipt. An administrator reviews it before you can continue."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onBack}>
+            Back
+          </Button>
+          {state === "confirmed" ? (
+            <Button onClick={onContinue}>Continue to Documents</Button>
+          ) : state === "pending" ? (
+            <Button variant="outline" onClick={check} loading={checking}>
+              <RefreshCw size={14} /> Check Status
+            </Button>
+          ) : (
+            <Button disabled>Continue</Button>
+          )}
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {state === "confirmed" && (
+          <Notice
+            tone="success"
+            icon={<CheckCircle2 size={18} className="text-emerald-600" />}
+            title="Payment confirmed"
+          >
+            An administrator has confirmed your payment. You can now continue
+            to the next step.
+          </Notice>
+        )}
+
+        {state === "pending" && (
+          <Notice
+            tone="warning"
+            icon={<Clock size={18} className="text-amber-600" />}
+            title="Your payment is under review"
+          >
+            <p>
+              Your receipt has been submitted and is waiting for an
+              administrator to review it.
+            </p>
+            <ul className="mt-2 list-disc space-y-0.5 pl-5">
+              <li>If it is confirmed, you can move on to the next step.</li>
+              <li>If it is rejected, you will be asked to upload a new receipt.</li>
+            </ul>
+            <p className="mt-2 text-xs opacity-80">
+              This page checks for updates automatically.
+            </p>
+          </Notice>
+        )}
+
+        {state === "rejected" && (
+          <Notice
+            tone="danger"
+            icon={<XCircle size={18} className="text-red-600" />}
+            title="Your receipt was rejected"
+          >
+            {rejectionRemark ? (
+              <p>
+                <span className="font-medium">Reason:</span> {rejectionRemark}
+              </p>
+            ) : (
+              <p>The administrator could not confirm this receipt.</p>
+            )}
+            <p className="mt-1">Please upload a new, clear receipt below.</p>
+          </Notice>
+        )}
+
+        {state === "none" && (
+          <Notice
+            tone="info"
+            icon={<AlertCircle size={18} className="text-blue-600" />}
+            title="What to upload"
+          >
+            A clear photo or PDF of your payment receipt showing the RRR or
+            receipt number, amount, and date.
+          </Notice>
+        )}
+
+        {receiptUrl && state !== "rejected" && (
+          <a
+            href={receiptUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 transition hover:bg-slate-50"
+          >
+            {isPdfUrl(receiptUrl) ? (
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                <FileText size={22} />
+              </span>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={receiptUrl}
+                alt="Submitted receipt"
+                className="h-14 w-14 shrink-0 rounded-lg border border-slate-200 object-cover"
+              />
+            )}
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-medium text-slate-800">
+                Submitted receipt
+              </span>
+              <span className="block text-xs text-slate-500">
+                Click to view the file you uploaded
+              </span>
+            </span>
+            <ExternalLink size={14} className="shrink-0 text-slate-400" />
+          </a>
+        )}
+
+        {(state === "none" || state === "rejected") && (
+          <UploadDropzone
+            accept="image/*,application/pdf"
+            hint="JPG, PNG or PDF, max 5MB"
+            label={state === "rejected" ? "Choose a new receipt" : "Choose receipt"}
+            uploading={uploading}
+            onFile={(file) => void upload(file)}
+          />
+        )}
+      </div>
+    </StepCard>
   );
 }
 
@@ -705,7 +1262,7 @@ function LabFormStep({
     surname: basicInfo.surname,
     first_name: basicInfo.first_name,
     age: basicInfo.age,
-    sex: basicInfo.sex,
+    sex: toSexCode(basicInfo.sex),
     faculty: basicInfo.faculty,
     department: basicInfo.department,
     complaint: "",
@@ -731,11 +1288,22 @@ function LabFormStep({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6">
-      <h2 className="text-base font-semibold text-slate-900 mb-5">
-        Laboratory Request Form
-      </h2>
-      <div className="grid grid-cols-2 gap-4">
+    <StepCard
+      step={3}
+      title="Laboratory Request Form"
+      description="Tell the lab what tests you need. Details from your personal info are filled in for you."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onBack}>
+            Back
+          </Button>
+          <Button onClick={save} loading={saving}>
+            Save & Continue
+          </Button>
+        </>
+      }
+    >
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label="Surname" required>
           <Input
             value={form.surname}
@@ -784,7 +1352,7 @@ function LabFormStep({
             </Select>
           </FormField>
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <FormField label="Complaint">
             <Textarea
               value={form.complaint}
@@ -793,7 +1361,7 @@ function LabFormStep({
             />
           </FormField>
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <FormField label="Test Required">
             <Input
               value={form.test_required}
@@ -803,56 +1371,7 @@ function LabFormStep({
           </FormField>
         </div>
       </div>
-      <div className="mt-6 flex justify-between">
-        <Button variant="secondary" onClick={onBack}>
-          Back
-        </Button>
-        <Button onClick={save} loading={saving}>
-          Save & Continue
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function PaymentStep({
-  uploaded,
-  rejected,
-  rejectionRemark,
-  onUpload,
-}: {
-  uploaded: boolean;
-  rejected: boolean;
-  rejectionRemark?: string;
-  onUpload: (file: File) => Promise<void>;
-}) {
-  return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
-      <h2 className="text-base font-semibold text-slate-900">
-        Payment Receipt
-      </h2>
-      <p className="text-sm text-slate-500">
-        Upload your health center payment receipt. An administrator must confirm
-        it before the next registration step becomes available.
-      </p>
-      {rejected && (
-        <p className="text-sm text-red-600">
-          Your receipt was rejected.{" "}
-          {rejectionRemark || "Upload a corrected receipt."}
-        </p>
-      )}
-      <FileUploadField
-        label="Payment Receipt"
-        uploaded={uploaded}
-        onUpload={onUpload}
-      />
-      {uploaded && (
-        <p className="text-sm text-amber-600">
-          Receipt submitted. This step will continue automatically after admin
-          confirmation.
-        </p>
-      )}
-    </div>
+    </StepCard>
   );
 }
 
@@ -865,6 +1384,9 @@ interface OnboardingQueueStatus {
   current_number?: number | null;
   total_students?: number;
   max_students?: number;
+  start_datetime?: string;
+  end_datetime?: string;
+  time_per_student_minutes?: number;
 }
 
 interface OnboardingQueueEntry {
@@ -875,12 +1397,14 @@ interface OnboardingQueueEntry {
 }
 
 function QueueStep({
+  step,
   title,
   description,
   queueType,
   onBack,
   onDone,
 }: {
+  step: number;
   title: string;
   description: string;
   queueType: "lab_test" | "physical_registration";
@@ -892,8 +1416,8 @@ function QueueStep({
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
 
-  const loadQueue = async () => {
-    setLoading(true);
+  const loadQueue = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const nextStatus = await apiRequest<OnboardingQueueStatus>(
         `/api/queues/status/${queueType}`,
@@ -919,6 +1443,11 @@ function QueueStep({
     queueMicrotask(() => {
       void loadQueue();
     });
+    const timer = setInterval(() => {
+      void loadQueue(true);
+    }, 30000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queueType]);
 
   const join = async () => {
@@ -934,20 +1463,34 @@ function QueueStep({
     }
   };
 
-  const ahead = status?.my_position != null && status.current_number != null
+  const ahead = status?.my_position != null
     ? Math.max(0, status.my_position - 1)
     : null;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
-      <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-      <p className="text-sm text-slate-500">{description}</p>
+    <StepCard
+      step={step}
+      title={title}
+      description={description}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onBack}>Back</Button>
+          <Button variant="outline" onClick={() => { void loadQueue(); onDone(); }}>
+            <RefreshCw size={14} /> Refresh Status
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
       {loading ? (
         <div className="h-32 animate-pulse rounded-lg bg-slate-100" />
       ) : !status?.session_id ? (
-        <p className="rounded-lg bg-slate-50 p-4 text-center text-sm text-slate-500">No active queue session is available yet.</p>
+        <Notice tone="info" icon={<Clock size={18} className="text-blue-600" />} title="No active queue session yet">
+          Check back later or tap Refresh Status. You can join as soon as a session opens.
+        </Notice>
       ) : (
         <>
+          <QueueTimingPanel status={status} />
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="rounded-lg bg-slate-50 p-3"><p className="text-xl font-bold text-slate-900">{status.total_students ?? entries.length}</p><p className="text-[11px] text-slate-500">In queue</p></div>
             <div className="rounded-lg bg-emerald-50 p-3"><p className="text-xl font-bold text-emerald-700">{status.current_number ?? 0}</p><p className="text-[11px] text-emerald-600">Now serving</p></div>
@@ -960,11 +1503,8 @@ function QueueStep({
           {status.is_eligible && !status.already_joined && <Button onClick={join} loading={joining} className="w-full">Join Queue</Button>}
         </>
       )}
-      <div className="flex justify-between">
-        <Button variant="secondary" onClick={onBack}>Back</Button>
-        <Button variant="outline" onClick={() => { void loadQueue(); onDone(); }}>Refresh Status</Button>
       </div>
-    </div>
+    </StepCard>
   );
 }
 
@@ -992,7 +1532,7 @@ function MedicalQuestionnaireStep({
     full_name: `${basicInfo.surname} ${basicInfo.first_name}`.trim(),
     age_last_birthday: basicInfo.age,
     date_of_birth: basicInfo.date_of_birth,
-    sex: basicInfo.sex,
+    sex: toSexCode(basicInfo.sex),
     marital_status: "",
     nationality: basicInfo.nationality || "Nigerian",
     state_of_origin: basicInfo.state_of_origin,
@@ -1061,26 +1601,29 @@ function MedicalQuestionnaireStep({
     "menstrual_disorder",
   ];
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5">
-      <div>
-        <h2 className="text-base font-semibold text-slate-900">
-          Medical Examination Questionnaire
-        </h2>
-        <p className="text-sm text-slate-500 mt-1">
-          Use commas to separate multiple history entries.
-        </p>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
+    <StepCard
+      step={5}
+      title="Medical Examination Questionnaire"
+      description="Answer honestly. Use commas to separate multiple history entries."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onBack}>
+            Back
+          </Button>
+          <Button onClick={save} loading={saving}>
+            Submit Questionnaire
+          </Button>
+        </>
+      }
+    >
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 sm:col-span-2">Personal details</h3>
         {[
           ["full_name", "Full Name"],
           ["age_last_birthday", "Age"],
           ["date_of_birth", "Date of Birth"],
           ["nationality", "Nationality"],
-          ["state_of_origin", "State of Origin"],
-          ["religion", "Religion"],
           ["occupation_of_parent_guardian", "Parent/Guardian Occupation"],
-          ["faculty", "Faculty"],
-          ["department", "Department"],
         ].map(([key, label]) => (
           <FormField key={key} label={label} required>
             <Input
@@ -1152,13 +1695,16 @@ function MedicalQuestionnaireStep({
             <Options values={DEPARTMENTS} />
           </Select>
         </FormField>
+        <div className="mt-2 border-t border-slate-100 pt-4 sm:col-span-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Medical history</h3>
+        </div>
         {[
           ["medical_illness_history", "Previous Illnesses"],
           ["previous_surgeries", "Previous Surgeries"],
           ["previous_hospital_admissions", "Previous Hospital Admissions"],
           ["reasons_for_admission", "Reasons for Admission"],
         ].map(([key, label]) => (
-          <div className="col-span-2" key={key}>
+          <div className="sm:col-span-2" key={key}>
             <FormField label={label} required>
               <Textarea
                 value={form[key as keyof typeof form]}
@@ -1168,8 +1714,15 @@ function MedicalQuestionnaireStep({
             </FormField>
           </div>
         ))}
+        <div className="mt-2 border-t border-slate-100 pt-4 sm:col-span-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Have you ever had any of the following?</h3>
+        </div>
         {questions.map((key) => (
-          <FormField key={key} label={key.replaceAll("_", " ")} required>
+          <FormField
+            key={key}
+            label={key.replaceAll("_", " ").replace(/^\w/, (c) => c.toUpperCase())}
+            required
+          >
             <Select
               value={form[key as keyof typeof form]}
               onChange={(e) => set(key, e.target.value)}
@@ -1180,15 +1733,7 @@ function MedicalQuestionnaireStep({
           </FormField>
         ))}
       </div>
-      <div className="flex justify-between">
-        <Button variant="secondary" onClick={onBack}>
-          Back
-        </Button>
-        <Button onClick={save} loading={saving}>
-          Submit Questionnaire
-        </Button>
-      </div>
-    </div>
+    </StepCard>
   );
 }
 
@@ -1222,7 +1767,7 @@ function CaseNotesStep({
     matric_registration_number: "",
     home_town: "",
     state_of_origin: basicInfo.state_of_origin,
-    sex: basicInfo.sex,
+    sex: toSexCode(basicInfo.sex),
     blood_group: "",
     genotype: "",
     rhesus_factor: "",
@@ -1247,11 +1792,22 @@ function CaseNotesStep({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6">
-      <h2 className="text-base font-semibold text-slate-900 mb-5">
-        Student Case Notes
-      </h2>
-      <div className="grid grid-cols-2 gap-4">
+    <StepCard
+      step={7}
+      title="Student Case Notes"
+      description="Final step. Confirm your details and next of kin to complete registration."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onBack}>
+            Back
+          </Button>
+          <Button onClick={save} loading={saving}>
+            Complete Registration
+          </Button>
+        </>
+      }
+    >
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label="Surname" required>
           <Input
             value={form.surname}
@@ -1358,7 +1914,7 @@ function CaseNotesStep({
             <Options values={GENOTYPES} />
           </Select>
         </FormField>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <FormField label="Home Address" required>
             <Textarea
               value={form.home_address}
@@ -1367,14 +1923,6 @@ function CaseNotesStep({
           </FormField>
         </div>
       </div>
-      <div className="mt-6 flex justify-between">
-        <Button variant="secondary" onClick={onBack}>
-          Back
-        </Button>
-        <Button onClick={save} loading={saving}>
-          Complete Registration
-        </Button>
-      </div>
-    </div>
+    </StepCard>
   );
 }

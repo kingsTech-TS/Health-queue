@@ -41,9 +41,25 @@ export async function apiRequest<T>(
   return res.json();
 }
 
+// The API stores naive UTC datetimes and serializes them without an offset
+// ("2026-09-27T07:00:00"), which browsers would otherwise read as local time.
+export function parseServerDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const hasTime = value.includes("T");
+  const hasOffset = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
+  const date = new Date(hasTime && !hasOffset ? `${value}Z` : value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function formatTime(value: string | Date | null | undefined): string {
+  const date = value instanceof Date ? value : parseServerDate(value);
+  if (!date) return "—";
+  return date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+}
+
 export function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("en-GB", {
+  return (parseServerDate(dateStr) ?? new Date(dateStr)).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -52,7 +68,7 @@ export function formatDate(dateStr: string | null | undefined): string {
 
 export function formatDateTime(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleString("en-GB", {
+  return (parseServerDate(dateStr) ?? new Date(dateStr)).toLocaleString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",

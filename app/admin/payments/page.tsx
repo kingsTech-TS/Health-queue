@@ -42,7 +42,7 @@ type FilterTab =
 
 interface PaymentAiReview {
   decision?: "likely_valid" | "likely_invalid" | "needs_manual_review";
-  confidence?: number;
+  confidence?: number | null;
   rrr_or_reference?: string | null;
   amount?: string | null;
   payment_date?: string | null;
@@ -50,8 +50,15 @@ interface PaymentAiReview {
   receipt_number?: string | null;
   reason?: string | null;
   extracted_fields?: Record<string, unknown>;
-  status?: string;
+  status?: "completed" | "error" | "unavailable" | string;
   model?: string;
+  error_type?: string;
+  http_status?: number;
+  gateway_message?: string;
+}
+
+function isAiReviewFailed(review?: PaymentAiReview | null) {
+  return review?.status === "error" || review?.status === "unavailable";
 }
 
 interface PaymentRecord {
@@ -146,8 +153,17 @@ function AiDecisionBadge({ review }: { review?: PaymentAiReview | null }) {
     );
   }
 
+  if (isAiReviewFailed(review)) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700">
+        <AlertTriangle size={13} className="text-slate-500" />
+        {review.status === "unavailable" ? "AI Unavailable" : "AI Failed"}
+      </span>
+    );
+  }
+
   const confidencePct =
-    review.confidence !== undefined ? `${Math.round(review.confidence * 100)}%` : null;
+    typeof review.confidence === "number" ? `${Math.round(review.confidence * 100)}%` : null;
 
   if (review.decision === "likely_valid") {
     return (
@@ -213,8 +229,10 @@ export default function AdminPaymentsPage() {
       if (reviewQueue?.counts) {
         setQueueCounts(reviewQueue.counts);
       }
+      return allStudents || [];
     } catch {
       setError(true);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -234,14 +252,30 @@ export default function AdminPaymentsPage() {
         message: string;
         analyzed_count: number;
         failed_count: number;
+        last_error?: string | null;
       }>("/api/admin/payment-review/analyze", {
         method: "POST",
         body: JSON.stringify(specificIds ? { student_ids: specificIds } : {}),
       });
-      toast.success(
-        res?.message || `AI Review analyzed ${res?.analyzed_count || 0} receipt(s).`
-      );
-      await load();
+      const analyzed = res?.analyzed_count || 0;
+      const failed = res?.failed_count || 0;
+      if (failed > 0) {
+        const summary =
+          analyzed > 0
+            ? `AI analyzed ${analyzed} receipt(s); ${failed} failed.`
+            : `AI analysis failed for ${failed} receipt(s).`;
+        toast.error(res?.last_error ? `${summary} ${res.last_error}` : summary);
+      } else if (analyzed === 0) {
+        toast.info("No pending receipts needed AI analysis.");
+      } else {
+        toast.success(`AI analyzed ${analyzed} receipt(s).`);
+      }
+      const refreshed = await load();
+      if (refreshed) {
+        setSelected((current) =>
+          current ? refreshed.find((p) => p.id === current.id) ?? current : current
+        );
+      }
     } catch (err: unknown) {
       toast.error(
         err instanceof Error ? err.message : "Failed to run AI receipt analysis"
@@ -719,7 +753,35 @@ export default function AdminPaymentsPage() {
                 <AiDecisionBadge review={selected.payment_ai_review} />
               </div>
 
-              {selected.payment_ai_review ? (
+              {isAiReviewFailed(selected.payment_ai_review) ? (
+                <div className="space-y-3 text-xs">
+                  <div className="rounded-lg bg-white p-3 border border-slate-200">
+                    <p className="font-semibold text-slate-700">AI analysis could not be completed</p>
+                    <p className="text-slate-600 mt-0.5 leading-relaxed">
+                      {selected.payment_ai_review?.reason ||
+                        "Administrator review is required."}
+                    </p>
+                    {selected.payment_ai_review?.gateway_message && (
+                      <p className="mt-2 font-mono text-[11px] text-slate-500 break-words">
+                        {selected.payment_ai_review.http_status
+                          ? `HTTP ${selected.payment_ai_review.http_status}: `
+                          : ""}
+                        {selected.payment_ai_review.gateway_message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => runAiAnalysis([selected.id])}
+                      loading={analyzingAi}
+                    >
+                      Retry AI Analysis
+                    </Button>
+                  </div>
+                </div>
+              ) : selected.payment_ai_review ? (
                 <div className="space-y-3 text-xs">
                   {selected.payment_ai_review.reason && (
                     <div className="rounded-lg bg-white p-3 border border-slate-200">

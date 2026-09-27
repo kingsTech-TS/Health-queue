@@ -1,0 +1,504 @@
+[0] Style: Normal | DESIGN AND IMPLEMENTATION OF EKSU HEALTH CENTER BOOKING  AND APPOINTMENT SYSTEM
+[1] Style: Normal | 
+[2] Style: Normal | 
+[3] Style: Normal | 
+[4] Style: Normal |  NNABUGWU SOLOMON CHUKWUEBUKA
+[5] Style: Normal | MATRIC NUMBER: 220903052
+[6] Style: Normal | 
+[7] Style: Normal | 
+[8] Style: Normal | A PROJECT SUBMITTED TO THE DEPARTMENT OF COMPUTER SCIENCE, FACULTY OF PHYSICAL SCIENCE, EKITI STATE UNIVERSITY (EKSU), NIGERIA
+[9] Style: Normal | 
+[10] Style: Normal | 
+[11] Style: Normal | 
+[12] Style: Normal | IN PARTIAL FULFILMENT OF THE REQUIREMENTS FOR THE AWARD OF BACHELOR OF SCIENCE (B. SC.) IN COMPUTER SCIENCE
+[13] Style: Normal | 
+[14] Style: Normal | 
+[15] Style: Normal | 
+[16] Style: Normal | 
+[17] Style: Normal | PROJECT SUPERVISOR:
+[18] Style: Normal | MRS. O. O. OLARINDE
+[19] Style: Normal | 
+[20] Style: Normal | 
+[21] Style: Heading 1 | CHAPTER ONE
+[22] Style: Heading 2 | INTRODUCTION
+[23] Style: Heading 2 | 1.1 Background of the Study
+[24] Style: Normal | The advancement of information and communication technology (ICT) has significantly transformed the way services are delivered across various sectors, including healthcare. One of the major areas of improvement in healthcare systems is the management of patient appointments and scheduling. Traditional methods of handling patient visits, which often involve walk-ins and manual queuing, are increasingly becoming inefficient, especially in environments with high patient demand (Gupta & Denton, 2008).
+[25] Style: Normal | In many healthcare facilities, including university health centers, patients are required to physically visit the facility and wait in line before receiving medical attention. This approach often leads to overcrowding, long waiting times, and poor service delivery. During peak periods, such as the admission of new students into 100 level at Ekiti State University (EKSU), the health center experiences a large influx of students requiring medical registration. This situation further exacerbates inefficiencies in patient management.
+[26] Style: Normal | A booking and appointment system provides a structured approach to managing patient flow by allowing individuals to schedule visits in advance. According to Cayirli and Veral (2003), appointment scheduling systems play a critical role in reducing patient waiting time and improving healthcare service efficiency. Such systems enable healthcare providers to allocate time slots, manage workloads, and ensure better utilization of available resources.
+[27] Style: Normal | Furthermore, studies have shown that the implementation of appointment-based systems in healthcare significantly improves patient satisfaction and reduces congestion within healthcare facilities (Gupta & Denton, 2008). By allowing patients to book appointments remotely and receive scheduled time slots, healthcare institutions can provide more organized and efficient services.
+[28] Style: Normal | This project focuses on the design and implementation of a Health Center Booking and Appointment System for Ekiti State University. The system aims to replace the traditional walk-in approach with a digital platform that allows students to schedule medical appointments, thereby improving efficiency, reducing waiting time, and enhancing overall service delivery.
+[29] Style: Normal | 
+[30] Style: Heading 2 | 1.2 Statement of the Problem
+[31] Style: Normal | The current method of managing patient visits at the EKSU Health Center is largely based on a walk-in system, where students physically visit the health center and wait to be attended to. This method is inefficient and leads to several challenges, including overcrowding, long waiting times, and poor organization.
+[32] Style: Normal | During the admission period for 100-level students, the situation becomes more problematic due to the high volume of students requiring medical registration within a short period. Students often spend long hours waiting without a clear schedule, leading to frustration and reduced productivity.
+[33] Style: Normal | Additionally, the absence of a structured appointment system makes it difficult for healthcare staff to manage patient flow effectively. There is no proper allocation of time slots, which results in uneven workload distribution and inefficiencies in service delivery. Research indicates that poor appointment scheduling is a major contributor to delays and inefficiencies in healthcare systems (Cayirli & Veral, 2003).
+[34] Style: Normal | Therefore, there is a need for an automated booking and appointment system that allows students to schedule their visits, reduces congestion, and improves the overall efficiency of the EKSU Health Center.
+[35] Style: Normal | 
+[36] Style: Heading 2 | 1.3 Aim and Objectives of the Study
+[37] Style: Heading 4 | Aim
+[38] Style: Normal | The aim of this project is to design and implement a Health Center Booking and Appointment System for Ekiti State University to improve the scheduling and management of student medical visits.
+[39] Style: Heading 4 | Objectives
+[40] Style: Normal | The specific objectives of this study are to:
+[41] Style: List Paragraph | Design a system for efficient registration of student during medical registration.
+[42] Style: List Paragraph | Develop a system for efficient registration of student during medical registration.
+[43] Style: List Paragraph | To implement a system for efficient registration of student during medical registration.
+[44] Style: List Paragraph | To evaluate the performance of the system.
+[45] Style: Heading 2 | 1.4 Significance of the Study
+[46] Style: Normal | This study is significant as it provides a practical solution to the challenges associated with manual and walk-in-based patient management systems. The implementation of a booking and appointment system will enable students to schedule their visits conveniently, thereby reducing waiting time and improving their overall experience.
+[47] Style: Normal | Healthcare staff will benefit from better workload distribution and improved organization of patient visits. The system will also enhance operational efficiency at the EKSU Health Center by ensuring that patient flow is properly managed.
+[48] Style: Normal | Furthermore, this study contributes to the application of ICT in healthcare systems and demonstrates how digital solutions can be used to solve real-world problems in institutional environments (Gupta & Denton, 2008).
+[49] Style: Normal | 
+[50] Style: Heading 2 | 1.5 Scope of the Study
+[51] Style: Normal | This project focuses on the design and implementation of a Health Center Booking and Appointment System for managing student medical visits at Ekiti State University. The system will include features such as appointment booking, scheduling, and appointment tracking.
+[52] Style: Normal | However, the system does not cover other aspects of healthcare management such as diagnosis, treatment, or electronic medical records. The focus is strictly on appointment scheduling and management.
+[53] Style: Normal | 
+[54] Style: Heading 2 | 1.6 Limitations of the Study
+[55] Style: Normal | The study may be limited by factors such as time constraints, limited access to real healthcare data, and technical challenges during system development. Additionally, the system is designed specifically for EKSU and may require modifications for use in other institutions.
+[56] Style: Heading 3 | 
+[57] Style: Normal | 
+[58] Style: Heading 2 | 1.7 Definition of Terms
+[59] Style: Normal | Appointment System: A system that allows individuals to schedule visits or services in advance.
+[60] Style: Normal | Booking: The process of reserving a specific time slot for a service.
+[61] Style: Normal | Patient Flow: The movement of patients through different stages of healthcare service.
+[62] Style: Normal | Scheduling: The process of allocating time slots for activities or services.
+[63] Style: Normal | Automation: The use of technology to perform tasks with minimal human intervention.
+[64] Style: Normal | Health Center: A facility that provides medical services within an institution.
+[65] Style: Heading 1 | CHAPTER TWO
+[66] Style: Heading 2 | LITERATURE REVIEW
+[67] Style: Heading 2 | 2.1 Introduction
+[68] Style: Normal | This chapter reviews existing literature related to booking and appointment systems in healthcare. It examines key concepts, theoretical frameworks, and existing systems used in managing patient appointments. The aim is to provide a solid foundation for the design and implementation of a Health Center Booking and Appointment System for Ekiti State University (EKSU).
+[69] Style: Normal | 
+[70] Style: Heading 2 | 2.2 Concept of Appointment Systems
+[71] Style: Normal | An appointment system is a structured method used to schedule and manage service delivery by allocating specific time slots to users. In healthcare, appointment systems are used to organize patient visits, reduce waiting time, and improve service efficiency.
+[72] Style: Normal | According to Gupta and Denton (2008), appointment scheduling is one of the most critical aspects of healthcare operations, as it directly affects patient flow, resource utilization, and service quality. Appointment systems help reduce congestion by distributing patient visits over time rather than allowing all patients to arrive simultaneously.
+[73] Style: Normal | 
+[74] Style: Heading 2 | 2.3 Appointment Systems in Healthcare
+[75] Style: Normal | Healthcare institutions increasingly rely on appointment systems to manage patient flow effectively. Traditional walk-in systems often lead to overcrowding and long waiting times, especially during peak periods.
+[76] Style: Normal | Cayirli and Veral (2003) noted that effective appointment scheduling improves patient satisfaction and reduces delays in service delivery. Similarly, Green et al. (2006) emphasized that proper scheduling systems enhance access to healthcare by ensuring timely service for patients.
+[77] Style: Normal | In the context of university health centers, such as EKSU, the need for an appointment system is particularly important during admission periods when a large number of students require medical registration within a short time frame.
+[78] Style: Normal | 
+[79] Style: Heading 2 | 2.4 Theoretical Framework: Appointment Scheduling Theory
+[80] Style: Normal | This study is based on appointment scheduling theory, which focuses on optimizing the allocation of time slots to minimize waiting time and maximize service efficiency.
+[81] Style: Normal | Appointment scheduling models consider factors such as arrival rate, service time, and no-show rates. According to Cayirli and Veral (2003), efficient scheduling systems balance patient demand with available resources to reduce idle time and overcrowding.
+[82] Style: Normal | These principles guide the design of the proposed system to ensure effective management of student appointments at the EKSU Health Center.
+[83] Style: Normal | 
+[84] Style: Heading 2 | 2.5 Review of Existing Systems
+[85] Style: Heading 3 | 2.5.1 Appointment Scheduling System (Gupta & Denton, 2008)
+[86] Style: Normal | This system improves healthcare efficiency by optimizing appointment scheduling; however, it is limited by its complexity and dependence on accurate patient arrival predictions.
+[87] Style: Heading 3 | 2.5.2 Outpatient Scheduling System (Cayirli & Veral, 2003)
+[88] Style: Normal | This system reduces patient waiting time through structured scheduling; however, it may not effectively handle walk-in patients or emergency cases.
+[89] Style: Heading 3 | 2.5.3 Open Access Scheduling System (Murray & Berwick, 2003)
+[90] Style: Normal | This system allows patients to book same-day appointments, improving access to care; however, it may lead to uneven workload distribution for healthcare providers.
+[91] Style: Heading 3 | 2.5.4 Advanced Access Scheduling System (Green et al., 2006)
+[92] Style: Normal | This system enhances timely access to healthcare services; however, it requires careful planning and may be difficult to implement in smaller facilities.
+[93] Style: Heading 3 | 2.5.5 Web-Based Appointment System (Zhang et al., 2014)
+[94] Style: Normal | This system enables online booking and improves accessibility; however, it depends on internet availability and user digital literacy.
+[95] Style: Heading 3 | 2.5.6 Mobile Health Appointment System (Boulos et al., 2011)
+[96] Style: Normal | This system allows patients to book appointments via mobile devices, improving convenience; however, it requires smartphone access and reliable connectivity.
+[97] Style: Heading 3 | 2.5.7 Hospital Information System (HIS) Appointment Module (Haux, 2006)
+[98] Style: Normal | This system integrates appointment scheduling with hospital operations; however, it is expensive and complex to implement.
+[99] Style: Heading 3 | 2.5.8 Electronic Booking System (EBM) (Berg, 2001)
+[100] Style: Normal | This system digitizes appointment management, improving record-keeping; however, it may face resistance from users accustomed to manual systems.
+[101] Style: Heading 3 | 2.5.9 Cloud-Based Appointment System (Kuo, 2011)
+[102] Style: Normal | This system offers scalable and accessible scheduling solutions; however, it raises concerns about data security and privacy.
+[103] Style: Heading 3 | 2.5.10 Smart Appointment System with Notifications (Gupta et al., 2016)
+[104] Style: Normal | This system uses reminders and notifications to reduce missed appointments; however, it depends on consistent communication channels.
+[105] Style: Normal | 
+[106] Style: Heading 2 | 2.6 Limitations of Existing Systems
+[107] Style: Normal | Despite the availability of various appointment systems, several limitations exist. Many systems are complex and require advanced infrastructure, making them unsuitable for smaller institutions such as university health centers.
+[108] Style: Normal | Additionally, some systems do not address the specific needs of student medical registration during admission periods, where large numbers of users must be managed within a short timeframe. Issues such as missed appointments, uneven scheduling, and lack of user-friendly interfaces further limit the effectiveness of existing systems.
+[109] Style: Normal | 
+[110] Style: Normal | 
+[111] Style: Heading 2 | 2.7 Justification for the Proposed System
+[112] Style: Normal | The review of existing systems highlights the need for a simple, efficient, and localized appointment system tailored to the EKSU Health Center. The proposed system aims to address the limitations of existing solutions by providing a user-friendly platform for booking appointments, managing schedules, and reducing waiting time.
+[113] Style: Normal | Unlike complex hospital systems, the proposed system will be designed specifically for student use, ensuring ease of access and effective management during peak periods such as admission screening.
+[114] Style: Normal | 
+[115] Style: Heading 2 | 2.8 Summary of Literature Review
+[116] Style: Normal | This chapter has reviewed key concepts, theories, and existing systems related to appointment scheduling in healthcare. It highlighted the importance of appointment systems in improving service delivery and identified the limitations of existing solutions.
+[117] Style: Normal | The findings justify the need for a customized booking and appointment system for EKSU, which will be designed and implemented in the next chapter.
+[118] Style: Normal | 
+[119] Style: Normal | 
+[120] Style: Normal | 
+[121] Style: Normal | 
+[122] Style: Normal | 
+[123] Style: Normal | 
+[124] Style: Normal | 
+[125] Style: Normal | 
+[126] Style: Heading 1 | 
+[127] Style: Heading 1 | 
+[128] Style: Normal | 
+[129] Style: Heading 1 | CHAPTER THREE
+[130] Style: Heading 2 | SYSTEM ANALYSIS AND DESIGN
+[131] Style: Heading 2 | 3.1 Introduction
+[132] Style: Normal | This chapter presents the analysis and design of the implemented EKSU Health Center Management System for managing student medical registration at Ekiti State University (EKSU). The system is designed as a comprehensive web-based platform built with FastAPI, MongoDB Atlas, and Cloudinary, featuring multi-stage medical form workflows, session-based queue management, AI-assisted payment verification, role-based access control, and digital health card generation to ensure operational efficiency, data security, and reduced waiting time.
+[133] Style: Heading 2 | 3.2 Analysis of the Existing System
+[134] Style: Normal | The current system used at the EKSU Health Center is based on a manual walk-in approach, where students visit the health center without prior scheduling or digital record management.
+[135] Style: Heading 3 | 3.2.1 Characteristics of the Existing System
+[136] Style: Normal | No appointment booking or digital queue system
+[137] Style: Normal | Students arrive without scheduled time or structured ordering
+[138] Style: Normal | Manual paper-based verification and record-keeping process
+[139] Style: Normal | No structured phase progression or form dependency tracking
+[140] Style: Normal | First-come, first-served approach with physical queuing
+[141] Style: Normal | Manual payment receipt verification by administrative staff
+[142] Style: Normal | Paper-based medical forms with no digital backup or audit trail
+[143] Style: Heading 3 | 3.2.2 Problems of the Existing System
+[144] Style: Normal | Severe overcrowding during peak admission periods
+[145] Style: Normal | Excessively long waiting time with no position visibility
+[146] Style: Normal | Lack of proper scheduling or capacity planning
+[147] Style: Normal | Difficulty in verifying student identity and payment authenticity
+[148] Style: Normal | Inefficient progression across medical registration stages
+[149] Style: Normal | Poor coordination among nurses, lab attendants, and administrative staff
+[150] Style: Normal | Lost or misplaced paper records and medical forms
+[151] Style: Normal | No standardized audit trail for administrative actions
+[152] Style: Normal | Manual data entry errors and inconsistencies in student records
+[153] Style: Heading 2 | 3.3 Analysis of the Proposed System
+[154] Style: Normal | The proposed system is a full-stack web-based Health Center Management System that introduces structured student onboarding, digital medical forms with read-locks, session-based queue scheduling, AI-assisted payment receipt verification, Cloudinary-based document storage, and role-controlled progression across multiple stages of the medical registration workflow.
+[155] Style: Heading 3 | 3.3.1 Key Features
+[156] Style: Normal | Student pre-upload verification using CSV bulk import or per-level manual add (100-level to 600-level)
+[157] Style: Normal | JWT-based authentication with role-based access control (Admin, Student, Registering Nurse, Lab Attendant)
+[158] Style: Normal | Mandatory staged medical form workflow: Basic Information, Lab Request, Medical Questionnaire, Physical Examination, and Pink File
+[159] Style: Normal | AI-assisted payment receipt analysis via AI Gateway integration with manual admin review fallback
+[160] Style: Normal | Three session-based queue types: LAB_TEST, PHYSICAL_REGISTRATION, and PHYSICAL_EXAM with staff-specific authorization
+[161] Style: Normal | Cloudinary integration for secure passport, signature, and payment receipt image uploads
+[162] Style: Normal | Registration period management with per-level active windows
+[163] Style: Normal | Comprehensive input sanitization layer for XSS and NoSQL injection protection
+[164] Style: Normal | Standardized 9-field activity audit logging for all admin and staff actions
+[165] Style: Normal | Digital Health Center Card generation with auto-assigned HC numbers
+[166] Style: Normal | Admin dashboard with real-time analytics and statistics
+[167] Style: Heading 2 | 3.4 System Requirements
+[168] Style: Heading 3 | 3.4.1 Functional Requirements
+[169] Style: Normal | The system shall:
+[170] Style: Normal | Allow admin to bulk upload student records via CSV (100L to 600L) or add students manually by level
+[171] Style: Normal | Verify student identity during account registration against pre-uploaded records
+[172] Style: Normal | Enforce level-specific matriculation number formats: 100-level (12 digits + 2 letters = 20 chars), 200-600 level (exactly 9 digits)
+[173] Style: Normal | Require active registration period window for any student onboarding activity
+[174] Style: Normal | Mandate Basic Information Form submission as prerequisite before unlocking any other form or queue action
+[175] Style: Normal | Allow students to upload payment receipts, passports, and signatures via Cloudinary
+[176] Style: Normal | Enable AI-assisted payment receipt analysis (decision: likely_valid, likely_invalid, or needs_manual_review) with confidence scoring and extracted field metadata
+[177] Style: Normal | Permit admins to verify or reject payment receipts in single or bulk operations
+[178] Style: Normal | Unlock passport and signature upload only after payment confirmation
+[179] Style: Normal | Generate auto-sequenced Lab Request unique numbers (LAB-YYYY-NNNNNN) and Health Center numbers (HC-NNNN)
+[180] Style: Normal | Manage three queue types with role-based access: LAB_TEST (Lab Attendant), PHYSICAL_REGISTRATION and PHYSICAL_EXAM (Registering Nurse)
+[181] Style: Normal | Support queue session creation with configurable start/end datetimes, max students, and time-per-student allocation
+[182] Style: Normal | Check student eligibility for queue joining (completed prerequisite forms + payment confirmed)
+[183] Style: Normal | Provide call-next-student, mark-attended, and mark-missed operations per queue entry
+[184] Style: Normal | Allow staff to update Lab Request Laboratory section, Physical Examination Form, and Student Case Notes (Pink File)
+[185] Style: Normal | Apply read-locks to all student-submitted medical forms preventing post-submission edits
+[186] Style: Normal | Log every admin/staff action in standardized audit trail: staff_id, actor_id, actor_name, role, action, target, details, metadata, created_at
+[187] Style: Normal | Generate digital health cards displaying student passport photo, HC number, and registration details
+[188] Style: Heading 3 | 3.4.2 Non-Functional Requirements
+[189] Style: Normal | High usability with role-appropriate simplified interfaces for students, nurses, lab attendants, and admins
+[190] Style: Normal | Fast response time under concurrent load with batch-optimized MongoDB queries reducing per-request round trips
+[191] Style: Normal | Secure data handling: bcrypt password hashing, JWT bearer tokens, comprehensive XSS and NoSQL injection sanitization across all user inputs
+[192] Style: Normal | Scalability via MongoDB Atlas cloud database and Cloudinary object storage
+[193] Style: Normal | Reliability during peak admission periods through session capacity limits and queue overflow protection
+[194] Style: Normal | Data integrity via Pydantic v2 schema validation on every API request and response
+[195] Style: Heading 2 | 3.5 System Architecture
+[196] Style: Normal | The system follows a layered three-tier architecture built on modern Python async web patterns:
+[197] Style: Normal | Presentation Layer: RESTful API endpoints organized by domain (Authentication, Admin, Students, Staff, Registration, Queues, Medical), consumable by any frontend client; documented via Swagger UI (/docs) and ReDoc (/redoc).
+[198] Style: Normal | Application Layer: FastAPI route handlers delegating business logic to three dedicated service modules—QueueService (session and entry lifecycle, eligibility checks), CloudinaryService (image upload/deletion with background removal fallback), and PaymentReviewService (AI Gateway receipt analysis with JSON-parsed structured output). Additional cross-cutting modules in app/core handle environment configuration, MongoDB connectivity, recursive input sanitization, and JWT/bcrypt security.
+[199] Style: Normal | Data Layer: MongoDB Atlas accessed asynchronously through the Motor driver. Collections include users, students, staff, basic_info, lab_request_forms, medical_examination_questionnaires, physical_examination_forms, student_case_notes, queues, queue_sessions, payment_receipts, registration_periods, and activity_logs. Cloudinary provides the object storage layer for passport photographs, signature images, and payment receipt uploads.
+[200] Style: Normal | Technology Stack: Backend Framework: FastAPI (Python 3.11+); Database: MongoDB Atlas (Motor async driver); File Storage: Cloudinary; Authentication: JWT via python-jose + OAuth2PasswordBearer; Password Hashing: bcrypt (72-byte truncation safety); Validation: Pydantic v2 + Pydantic Settings; HTTP Client: httpx (async AI Gateway integration); PDF Support: pypdf.
+[201] Style: Heading 2 | 3.6 System Roles
+[202] Style: Normal | Admin:
+[203] Style: Normal | Seeded automatically on first application startup via environment credentials
+[204] Style: Normal | Approves, suspends, unsuspends staff and admin accounts with atomic 4-field suspension update (is_suspended, suspension_reason, suspended_by, suspension_date)
+[205] Style: Normal | Bulk uploads student records via CSV (requires matric_number column) or manual per-level add (100L to 600L)
+[206] Style: Normal | Manages registration periods: create, list, update, delete (per-level start/end dates)
+[207] Style: Normal | Reviews payment receipts: single or bulk confirm/reject with optional AI-assisted analysis decision support
+[208] Style: Normal | Views all users, Pink Files, audit logs, and Admin Dashboard statistics
+[209] Style: Normal | Promotes staff to admin role
+[210] Style: Normal | Accesses all three queue types regardless of staff sub-role
+[211] Style: Normal | Student:
+[212] Style: Normal | Creates account only if registration number was pre-uploaded by Admin (identity derived strictly from JWT, never from URL parameters)
+[213] Style: Normal | Completes full registration workflow in mandatory order: Basic Info → Payment → Passport/Signature → Lab Form → LAB_TEST queue → Medical Questionnaire → PHYSICAL_REGISTRATION queue → Pink File → Health Card
+[214] Style: Normal | Joins eligible queues and views live position and queue status
+[215] Style: Normal | Views profile dashboard and downloads/prints digital Health Center Card
+[216] Style: Normal | Submitted medical forms become read-locked (cannot view, edit, or delete post-submission for record integrity)
+[217] Style: Normal | Registering Nurse (sub-role: registering_nurse — requires Admin approval before first login):
+[218] Style: Normal | Creates, starts, updates, completes, and deletes PHYSICAL_REGISTRATION and PHYSICAL_EXAM queue sessions
+[219] Style: Normal | Calls next student, marks student attended, or marks student missed for authorized queue types
+[220] Style: Normal | Records physical examination findings into Physical Examination Form
+[221] Style: Normal | Updates Student Case Notes / Pink File including blood group, genotype, BP, immunizations, and auto-assigned HC number
+[222] Style: Normal | Lab Attendant (sub-role: lab_attendant — requires Admin approval before first login):
+[223] Style: Normal | Creates, starts, updates, completes, and deletes LAB_TEST queue sessions only
+[224] Style: Normal | Calls next student, marks student attended, or marks student missed in LAB_TEST queue
+[225] Style: Normal | Records laboratory findings into the Laboratory section of the Lab Request Form (hospital number, specimen info, diagnosis, tests requested, doctor signature, antibiotic sensitivity, reporting dates, and medical laboratory scientist fields)
+[226] Style: Heading 2 | 3.7 Student Verification Process
+[227] Style: Normal | Admin pre-uploads student data into the system (CSV upload via /admin/upload-students-file or by-level manual add via /admin/add-students-by-level). Each student record stores level (100, 200, 300, 400, 500, or 600) and registration/matric number.
+[228] Style: Normal | During account registration (/api/auth/register/student), the submitted registration_number is validated against the pre-uploaded students collection.
+[229] Style: Normal | Level-specific format validation is enforced: 100-level must match ^\d{12}[A-Za-z]{2}$ (exactly 20 characters: 12 digits + 2 letters); 200-level through 600-level must match ^\d{9}$ (exactly 9 digits).
+[230] Style: Normal | Only students whose records exist in the pre-uploaded list and have not yet claimed an account may proceed with registration.
+[231] Style: Normal | Invalid or unrecognized registration numbers are denied with a contact-admin message.
+[232] Style: Normal | On successful account creation, the student record is linked to the new authenticated user account via user_id field; subsequent identity lookups always resolve through the JWT subject claim.
+[233] Style: Heading 2 | 3.8 Queue Session and Scheduling Logic
+[234] Style: Normal | The system uses session-based queue scheduling with role-specific queue types. Each queue session is configured with the following parameters:
+[235] Style: Normal | queue_type: one of lab_test, physical_registration, physical_exam
+[236] Style: Normal | title: descriptive session name
+[237] Style: Normal | start_datetime and end_datetime: session window (start cannot be in the past; end must be strictly after start)
+[238] Style: Normal | max_students: session capacity (minimum 1, maximum 5000)
+[239] Style: Normal | time_per_student_minutes: estimated duration per student (minimum 1, maximum 480)
+[240] Style: Normal | Duplicate sessions at identical start_datetime for the same queue_type are rejected automatically.
+[241] Style: Normal | Student eligibility to join a queue is checked before entry creation. For LAB_TEST queue the student must have: completed Basic Info Form, payment confirmed, and submitted Lab Request Form Student Info section. For PHYSICAL_REGISTRATION or PHYSICAL_EXAM the student additionally needs a completed Medical Examination Questionnaire.
+[242] Style: Normal | Within a session, queue_number is assigned sequentially starting at 1 on first-come first-served basis; priority (critical) entries push all waiting entries by +1 and insert at position 1.
+[243] Style: Normal | When a student is marked missed their queue number is moved to the end of the queue and a fresh waiting entry is recreated so no student is dropped.
+[244] Style: Normal | Example session schedule:
+[245] Style: Normal | Session type: LAB_TEST
+[246] Style: Normal | Start datetime: 2025-11-10 09:00 AM
+[247] Style: Normal | End datetime: 2025-11-10 05:00 PM
+[248] Style: Normal | Time per student: 10 minutes
+[249] Style: Normal | Max students: 40
+[250] Style: Normal | Student Queue Number
+[251] Style: Normal | Approximate Slot
+[252] Style: Normal | 1
+[253] Style: Normal | 09:00 – 09:10
+[254] Style: Normal | 2
+[255] Style: Normal | 09:10 – 09:20
+[256] Style: Normal | 3
+[257] Style: Normal | 09:20 – 09:30
+[258] Style: Normal | This ensures orderly attendance and eliminates uncontrolled physical congestion.
+[259] Style: Heading 2 | 3.9 Multi-Stage Medical Registration Structure
+[260] Style: Normal | The system is divided into dependent stages with strict progression gating enforced at both API and service layers:
+[261] Style: Normal | Stage 0: Pre-Upload and Account (Admin uploads students → Student verifies identity and creates account during active registration period)
+[262] Style: Normal | Stage 1: Basic Information Form (MANDATORY PREREQUISITE — blocks all further stages until submitted; captures surname, first name, last name, age, DOB, faculty, department, nationality, state/LGA, religion, marital status, home town/address, sex, phone)
+[263] Style: Normal | Stage 2: Payment Upload and Verification (Student uploads receipt → Cloudinary stores securely → AI Gateway extracts RRR/reference, amount, date, and institution returning likely_valid/likely_invalid/needs_manual_review decision → Admin confirms or rejects in dashboard → passport and signature uploads unlock only after confirmation)
+[264] Style: Normal | Stage 3: Document Uploads (Passport photograph with optional Cloudinary AI background removal; signature image)
+[265] Style: Normal | Stage 4: Lab Request Form — Student Information Section (student fills surname, first name, age, sex, faculty, department; unique LAB-YYYY-NNNNNN number auto-assigned)
+[266] Style: Normal | Stage 5: LAB_TEST Queue Session (student joins eligible queue → Lab Attendant calls → Laboratory section completed by staff: hospital/lab numbers, specimen, diagnosis, tests, antibiotic sensitivity, doctor signature, scientist name, dates received/reported)
+[267] Style: Normal | Stage 6: Medical Examination Questionnaire (full illness/surgery/admission history lists + yes/no checklist for tuberculosis, diabetes, epilepsy, sickle cell, asthma, psychiatric illness, visual impairment, STD; menstrual disorder field for female students only; allergies, medications, family history)
+[268] Style: Normal | Stage 7: PHYSICAL_REGISTRATION Queue Session (student joins → Registering Nurse calls → Physical Examination Form filled: weight, height, visual acuity, hearing, all body systems observations, laboratory findings summary, diagnosis, remarks)
+[269] Style: Normal | Stage 8: Student Case Notes / Pink File (auto-created by system or staff; generates HC-NNNN health center number; captures personal info, next of kin with relationship and GSM, religion, matric number, home town/state, sex, date of registration; plus medical data: sensitivity, blood group, rhesus factor, genotype, hepatitis A/B, BP, 7-entry immunizations dict)
+[270] Style: Normal | Stage 9: Registration Completed → Digital Health Center Card generated and available for download/printing
+[271] Style: Normal | Rules: A student must complete Stage 1 before any other stage. A student must have payment confirmed before Stage 3, 4, or any queue. A student must complete Stage 4 before Stage 5. A student must complete Stage 5 and 6 before Stage 7. Progression is strictly controlled by eligibility checks in QueueService and at each form endpoint.
+[272] Style: Heading 2 | 3.10 Missed Queue and Form Lock Policy
+[273] Style: Normal | Queue Miss Handling: If a student is marked missed by authorized staff during an active queue session their current queue entry is flagged is_missed=True with status=missed, their queue_number is reassigned to the count of remaining non-missed entries + 1, and a new waiting entry is appended at the end of the queue. Students never lose their place entirely; fairness is preserved by moving missed students to the rear rather than dropping them.
+[274] Style: Normal | Medical Form Read-Lock: Once a student submits a medical form (Basic Info, Lab Request Student Info, Medical Questionnaire) the document becomes read-locked for that student account. Subsequent GET or PUT attempts from the student role return a 403 lock message advising contact with admin for any needed corrections. Only staff or admin roles may update form contents post-submission, preserving record integrity for the Pink File.
+[275] Style: Normal | Staff Suspension: If a staff member's account is suspended the system updates four fields atomically in the same $set operation: is_suspended=True, suspension_reason, suspended_by (actor ObjectId), suspension_date (UTC now). All future endpoint calls fail 403 with descriptive reason message. Unsuspension reverses is_suspended and clears related fields.
+[276] Style: Heading 2 | 3.11 System Workflow (End-to-End)
+[277] Style: Normal | Admin bulk uploads students by CSV or level (100L to 600L); creates registration period windows
+[278] Style: Normal | Student registers account with email/password + matric number; system validates against pre-uploaded list and level format rules
+[279] Style: Normal | Student logs in via OAuth2 form (email or matric number) → receives 30-minute JWT bearer token
+[280] Style: Normal | Student submits Basic Information Form (Stage 1 prerequisite); system sanitizes all 21 fields through dedicated sanitizers then stores document
+[281] Style: Normal | Student uploads payment receipt image to Cloudinary; PaymentReviewService optionally calls AI Gateway for structured decision and extracted metadata
+[282] Style: Normal | Admin reviews payment in dashboard; confirms or rejects (with rejection reason); confirmation triggers unlock of passport/signature upload endpoints
+[283] Style: Normal | Student uploads passport and signature
+[284] Style: Normal | Student fills Lab Request Form Student Information section; system assigns LAB-YYYY-NNNNNN unique number
+[285] Style: Normal | Student joins active LAB_TEST queue session; QueueService checks eligibility and assigns queue_number
+[286] Style: Normal | Lab Attendant calls next student; completes Laboratory section of Lab Request Form; marks queue entry attended
+[287] Style: Normal | Student submits Medical Examination Questionnaire with dynamic lists and yes/no checklist
+[288] Style: Normal | Student joins active PHYSICAL_REGISTRATION queue session
+[289] Style: Normal | Registering Nurse calls next student; records Physical Examination Form; updates/creates Student Case Notes Pink File with HC number
+[290] Style: Normal | Registration status changes to COMPLETED
+[291] Style: Normal | Student views Health Center Card with passport, HC number, and details; downloads or prints card
+[292] Style: Normal | Every privileged admin/staff action in the flow is written to activity_logs with the standard 9-field shape.
+[293] Style: Heading 2 | 3.12 USE CASE
+[294] Style: Normal | 
+[295] Style: Normal | Fig 3.1 Use Case Diagram
+[296] Style: Normal | 
+[297] Style: Heading 2 | 
+[298] Style: Normal | Fig 3.2 Flow chart
+[299] Style: Heading 2 | 
+[300] Style: Heading 2 | 
+[301] Style: Normal | 
+[302] Style: Heading 2 | 3.14 Entity Relationship Diagram
+[303] Style: Normal | Core Collections / Entities:
+[304] Style: Normal | Users
+[305] Style: Normal | _id (ObjectId, PK)
+[306] Style: Normal | email (unique)
+[307] Style: Normal | hashed_password (bcrypt)
+[308] Style: Normal | role (enum: admin | student | staff)
+[309] Style: Normal | sub_role (enum: registering_nurse | lab_attendant — nullable)
+[310] Style: Normal | is_approved (bool)
+[311] Style: Normal | is_suspended (bool)
+[312] Style: Normal | suspension_reason (string, nullable)
+[313] Style: Normal | suspended_by (ObjectId, nullable)
+[314] Style: Normal | suspension_date (datetime, nullable)
+[315] Style: Normal | created_at (datetime)
+[316] Style: Normal | Students
+[317] Style: Normal | _id (ObjectId, PK)
+[318] Style: Normal | registration_number (unique, per-level format)
+[319] Style: Normal | level (100|200|300|400|500|600)
+[320] Style: Normal | user_id (ObjectId FK → Users, nullable)
+[321] Style: Normal | passport_url / passport_public_id (Cloudinary)
+[322] Style: Normal | signature_url / signature_public_id (Cloudinary)
+[323] Style: Normal | payment_receipt_url / payment_receipt_public_id (Cloudinary)
+[324] Style: Normal | payment_confirmed / payment_rejected (bool)
+[325] Style: Normal | payment_rejection_remark (string)
+[326] Style: Normal | payment_ai_review (object, AI Gateway output)
+[327] Style: Normal | Staff
+[328] Style: Normal | _id (ObjectId, PK)
+[329] Style: Normal | user_id (ObjectId FK → Users)
+[330] Style: Normal | staff_id (unique)
+[331] Style: Normal | full_name (string)
+[332] Style: Normal | title (string, nullable)
+[333] Style: Normal | sub_role (registering_nurse | lab_attendant)
+[334] Style: Normal | BasicInfo
+[335] Style: Normal | _id (ObjectId, PK)
+[336] Style: Normal | student_id (ObjectId FK → Students)
+[337] Style: Normal | surname, first_name, last_name, age, date_of_birth, faculty, department, nationality, state_of_origin, religion, marital_status, local_govt, home_town, home_address, sex, phone_number
+[338] Style: Normal | created_at, updated_at
+[339] Style: Normal | LabRequestForm
+[340] Style: Normal | _id (ObjectId, PK)
+[341] Style: Normal | student_id (ObjectId FK → Students)
+[342] Style: Normal | unique_number (LAB-YYYY-NNNNNN, unique)
+[343] Style: Normal | STUDENT INFO SECTION: surname, first_name, age, sex, faculty, department (required, student-filled)
+[344] Style: Normal | LABORATORY SECTION: hosp_no, hospital_number, laboratory_number, nature_of_specimen, date_collected, time_collected, diagnosis_clinical_details, test_required, doctor, doctor_signature, doctor_signature_date, antibiotic_sensitivity (dict), date_received, date_reported, medical_laboratory_scientist, final_date (all optional, staff-filled)
+[345] Style: Normal | created_at
+[346] Style: Normal | MedicalExaminationQuestionnaire
+[347] Style: Normal | _id (ObjectId, PK)
+[348] Style: Normal | student_id (ObjectId FK → Students)
+[349] Style: Normal | full_name, age_last_birthday, date_of_birth, sex, marital_status, nationality, state_of_origin, religion, occupation_of_parent_guardian, faculty, department
+[350] Style: Normal | medical_illness_history[], previous_surgeries[], previous_hospital_admissions[], reasons_for_admission[]
+[351] Style: Normal | Yes/No checklist: tuberculosis, diabetes, epilepsy, sickle_cell_disease, asthma, psychiatric_illness, visual_impairment, sexually_transmitted_disease, menstrual_disorder (female-only nullable)
+[352] Style: Normal | allergies, current_medications, family_medical_history (optional)
+[353] Style: Normal | PhysicalExaminationForm
+[354] Style: Normal | _id (ObjectId, PK)
+[355] Style: Normal | student_id (ObjectId FK → Students)
+[356] Style: Normal | weight_kg, height_cm (required)
+[357] Style: Normal | visual_acuity, left/right eye, hearing, eyes, ENT, lymphatic glands, spinal reflexes, cardiovascular, BP, pulse, respiratory, breast, abdominal, genitourinary, hernia, musculoskeletal, other_observations, laboratory_findings, blood_tests, pvc, wbc, blood_group, haemoglobin_genotype, urinalysis, stool_analysis, other_tests, chest_xray, heart, lungs, chest_cage, others, summary_of_findings, diagnosis, remarks_special_instructions (all optional staff-filled)
+[358] Style: Normal | StudentCaseNotes (Pink File)
+[359] Style: Normal | _id (ObjectId, PK)
+[360] Style: Normal | student_id (ObjectId FK → Students)
+[361] Style: Normal | hc_number (HC-NNNN, unique, auto-generated)
+[362] Style: Normal | surname, other_names, age, dob/date_of_birth, home_address, office_address, next_of_kin, relationship, xray_number, phone_gsm_number, religion, matric_registration_number, home_town, state_of_origin, consultant, sex, date_of_registration (required core)
+[363] Style: Normal | medical: sensitivity, blood_group, rhesus/rhesus_factor, genotype, hepatitis_b, hepatitis_a, bp (optional)
+[364] Style: Normal | immunizations (dict, 7 optional keys)
+[365] Style: Normal | QueueSessions
+[366] Style: Normal | _id (ObjectId, PK)
+[367] Style: Normal | queue_type (lab_test | physical_registration | physical_exam)
+[368] Style: Normal | title, max_students, time_per_student_minutes
+[369] Style: Normal | start_datetime, end_datetime (UTC)
+[370] Style: Normal | status (draft | active | completed | cancelled)
+[371] Style: Normal | current_count, current_number
+[372] Style: Normal | created_by (ObjectId FK → Staff/Admin)
+[373] Style: Normal | created_at, updated_at
+[374] Style: Normal | Queues (Queue Entries)
+[375] Style: Normal | _id (ObjectId, PK)
+[376] Style: Normal | student_id (ObjectId FK → Students)
+[377] Style: Normal | session_id (ObjectId FK → QueueSessions, nullable for legacy entries)
+[378] Style: Normal | queue_type
+[379] Style: Normal | queue_number (int)
+[380] Style: Normal | priority (bool)
+[381] Style: Normal | status (waiting | called | completed | missed)
+[382] Style: Normal | is_missed (bool)
+[383] Style: Normal | called_at, completed_at, date_time, created_at
+[384] Style: Normal | RegistrationPeriods
+[385] Style: Normal | _id (ObjectId, PK)
+[386] Style: Normal | level (100|200|300|400|500|600)
+[387] Style: Normal | start_date, end_date (datetime)
+[388] Style: Normal | is_active (bool)
+[389] Style: Normal | created_at
+[390] Style: Normal | ActivityLogs
+[391] Style: Normal | _id (ObjectId, PK)
+[392] Style: Normal | staff_id, actor_id, actor_name, role, action, target, details, metadata (object), created_at
+[393] Style: Normal | 
+[394] Style: Heading 2 | 
+[395] Style: Normal | 
+[396] Style: Normal | Fig 3.3 Entity Relationship Diagram
+[397] Style: Heading 2 | 3.15 Summary
+[398] Style: Normal | This chapter presented the system analysis and design of the implemented EKSU Health Center Management System, which moves well beyond a simple booking and appointment model. The system integrates pre-upload student verification with level-specific matric format validation, a nine-stage gated medical form workflow with read-locks, AI-assisted payment receipt review backed by Cloudinary object storage, three role-gated queue types with session-based scheduling, standardized audit logging across all administrative actions, and auto-generated Health Center cards with unique HC numbers.
+[399] Style: Normal | The three-tier FastAPI + MongoDB Atlas + Cloudinary architecture ensures scalability, while the comprehensive sanitization and security layer (Pydantic v2 validation, input sanitizers against XSS and NoSQL injection, bcrypt password hashing, JWT role-based dependencies) guarantees robust data protection. The next chapter will focus on the details of implementation, testing procedures, and evaluation of the deployed system.
+[400] Style: Normal | 
+[401] Style: Heading 1 | CHAPTER FOUR
+[402] Style: Heading 1 | SYSTEM IMPLEMENTATION, TESTING AND EVALUATION
+[403] Style: Heading 2 | 4.1 Introduction
+[404] Style: Normal | This chapter presents the implementation, testing, and evaluation of the EKSU Health Center Management System. It explains how the design presented in Chapter Three was translated into a working web-based application and describes the development environment, major modules, database implementation, security mechanisms, testing procedures, and evaluation.
+[405] Style: Heading 2 | 4.2 Development Environment
+[406] Style: Normal | The system was implemented as a full-stack web-based application. The backend uses FastAPI with Python 3.11+, MongoDB Atlas as the cloud database, and Cloudinary for passport photographs, signatures, and payment receipt images. JWT authentication, bcrypt password hashing, Pydantic v2 validation, and OAuth2PasswordBearer support authentication, authorization, validation, and secure password handling. An AI Gateway is integrated for assisted payment-receipt analysis.
+[407] Style: Heading 2 | 4.2.1 Hardware Requirements
+[408] Style: Normal | A modern computer with a multi-core processor, at least 8 GB RAM, adequate storage, keyboard, mouse, and reliable internet access is sufficient for development and operation of the system.
+[409] Style: Heading 2 | 4.2.2 Software Requirements
+[410] Style: Normal | The principal software components are Python 3.11+, FastAPI, MongoDB Atlas, Motor, Cloudinary, JWT security libraries, bcrypt, Pydantic v2, an HTTP client for AI Gateway communication, and a modern web browser. FastAPI also provides Swagger UI and ReDoc API documentation.
+[411] Style: Heading 2 | 4.3 System Implementation
+[412] Style: Normal | Implementation followed the architecture and workflow specified in Chapter Three. The system was organized into authentication, student management, staff management, registration-period management, payment verification, medical forms, queue management, audit logging, and health-card generation modules.
+[413] Style: Heading 2 | 4.3.1 Authentication and Authorization Module
+[414] Style: Normal | The module provides account registration and login for Admin, Student, Registering Nurse, and Lab Attendant users. Student registration is restricted to pre-uploaded student records. JWT bearer tokens identify authenticated users, while role-based dependencies restrict protected operations. Staff accounts require administrative approval.
+[415] Style: Heading 2 | 4.3.2 Student Management Module
+[416] Style: Normal | Administrators can upload student records through CSV or add students manually by level from 100-level to 600-level. Registration numbers are checked against the pre-uploaded records and level-specific format validation is applied before account creation.
+[417] Style: Heading 2 | 4.3.3 Registration Period Module
+[418] Style: Normal | Administrators can create, update, list, and delete registration periods for individual student levels. Student onboarding is permitted only when the relevant registration period is active.
+[419] Style: Heading 2 | 4.3.4 Medical Form Module
+[420] Style: Normal | The system implements the staged Basic Information, Lab Request, Medical Examination Questionnaire, Physical Examination, and Student Case Notes (Pink File) workflow. Student-submitted forms are read-locked after submission, while authorized staff and administrators can make controlled updates where required.
+[421] Style: Heading 2 | 4.3.5 Payment Verification Module
+[422] Style: Normal | Students upload payment receipts through the application and files are stored in Cloudinary. The payment review service can submit receipt information to the configured AI Gateway and receive a structured decision such as likely valid, likely invalid, or needs manual review. Final confirmation or rejection remains an administrative action.
+[423] Style: Heading 2 | 4.3.6 Queue Management Module
+[424] Style: Normal | The system implements LAB_TEST, PHYSICAL_REGISTRATION, and PHYSICAL_EXAM queue types. Authorized staff create sessions with a title, time window, capacity, and estimated time per student. Eligible students receive sequential queue numbers. Staff can call the next student, mark attendance, or mark a student as missed; missed students are moved to the rear of the queue.
+[425] Style: Heading 2 | 4.3.7 File Management Module
+[426] Style: Normal | Cloudinary stores passport photographs, signatures, and payment receipts while the database stores their corresponding URLs and public identifiers. This separates media objects from transactional records.
+[427] Style: Heading 2 | 4.3.8 Audit Logging Module
+[428] Style: Normal | Administrative and staff actions are recorded in activity logs containing actor and staff identifiers, actor name, role, action, target, details, metadata, and creation time. This provides traceability for privileged operations.
+[429] Style: Heading 2 | 4.3.9 Digital Health Center Card
+[430] Style: Normal | After the required registration stages are completed, the system generates a digital Health Center Card containing the student's passport photograph, Health Center number, and registration information. The student can view, download, or print the card.
+[431] Style: Heading 2 | 4.4 Database Implementation
+[432] Style: Normal | MongoDB Atlas is the primary database. Major collections include users, students, staff, basic_info, lab_request_forms, medical_examination_questionnaires, physical_examination_forms, student_case_notes, queues, queue_sessions, registration_periods, and activity_logs. ObjectId references maintain relationships between users, students, staff, forms, queues, and sessions.
+[433] Style: Heading 2 | 4.5 Security Implementation
+[434] Style: Normal | Passwords are hashed with bcrypt. JWT bearer authentication protects secured endpoints, while role-based authorization separates administrative, student, nursing, and laboratory operations. Pydantic schemas validate request and response data, input sanitization reduces XSS and NoSQL-injection risks, medical-form read-locks protect submitted records, and suspended staff accounts are prevented from using protected operations.
+[435] Style: Heading 2 | 4.6 System Testing
+[436] Style: Normal | Testing examined the major functional requirements and verified that the implemented workflow enforces required sequencing and role permissions.
+[437] Style: Heading 2 | 4.6.1 Functional Test Cases
+[438] Style: Normal | The principal functional test cases are presented in Table 4.1.
+[439] Style: Heading 2 | 4.6.2 Security and Validation Testing
+[440] Style: Normal | Security testing covers authentication, authorization, input validation, account suspension, and protection of submitted medical records. The application validates data, sanitizes user-controlled input, checks JWT credentials, and applies role-specific access controls before protected operations.
+[441] Style: Heading 2 | 4.6.3 Integration Testing
+[442] Style: Normal | Integration testing considers interactions between the API, MongoDB Atlas, Cloudinary, authentication layer, queue service, and payment-review service. The objective is to ensure that successful operations correctly enable dependent stages, such as payment confirmation enabling document uploads and completion of prerequisite forms enabling queue access.
+[443] Style: Heading 2 | 4.7 System Evaluation
+[444] Style: Normal | The implemented system addresses the major operational problems identified in the existing-system analysis. Student records can be preloaded, registration periods can be configured by level, medical forms follow a controlled sequence, queues use sessions and capacity limits, and administrative actions are auditable.
+[445] Style: Heading 2 | 4.8 Chapter Summary
+[446] Style: Normal | This chapter described the implementation and testing of the EKSU Health Center Management System, including the development environment, major modules, database, security mechanisms, functional testing, and evaluation. The next chapter presents the summary, conclusion, recommendations, and future work.
+[447] Style: Normal | Table 4.1: Functional Test Cases
+[448] Style: Normal | 
+[449] Style: Heading 1 | CHAPTER FIVE
+[450] Style: Heading 1 | SUMMARY, CONCLUSION AND RECOMMENDATIONS
+[451] Style: Heading 2 | 5.1 Introduction
+[452] Style: Normal | This chapter summarizes the work carried out in the design and implementation of the EKSU Health Center Management System. It presents the major findings, conclusion, recommendations, and possible areas for future development.
+[453] Style: Heading 2 | 5.2 Summary of the Study
+[454] Style: Normal | The study addressed challenges associated with manual and walk-in-based student medical registration at Ekiti State University. The existing process involved physical queues, manual records, limited visibility of student position, difficulty coordinating registration stages, and administrative challenges during periods of high student demand. The literature review examined appointment scheduling concepts and existing healthcare appointment systems, while the system analysis identified the need for a localized workflow tailored to EKSU.
+[455] Style: Heading 2 | 5.3 Summary of the Implemented System
+[456] Style: Normal | The implemented system provides student verification, registration, payment receipt submission and review, document upload, laboratory processing, medical questionnaire submission, physical examination, Pink File completion, queue management, audit logging, and digital Health Center Card generation. Four operational roles are supported: Admin, Student, Registering Nurse, and Lab Attendant.
+[457] Style: Heading 2 | 5.4 Major Findings
+[458] Style: Normal | The implemented design and functional testing produced the following findings:
+[459] Style: Custom Number | 1. Pre-uploaded student records provide an identity-verification point before account creation.
+[460] Style: Custom Number | 2. Registration-period controls restrict onboarding to configured periods and levels.
+[461] Style: Custom Number | 3. Dependency checks prevent students from skipping required registration stages.
+[462] Style: Custom Number | 4. Session-based queues provide controlled capacity and sequential processing.
+[463] Style: Custom Number | 5. Role-based authorization separates administrative, student, nursing, and laboratory responsibilities.
+[464] Style: Custom Number | 6. Read-locks and audit logs improve record integrity and traceability.
+[465] Style: Custom Number | 7. Cloudinary separates media storage from transactional database records.
+[466] Style: Custom Number | 8. AI-assisted payment review provides decision support while final confirmation remains an administrative action.
+[467] Style: Custom Number | 9. Digital Health Center Cards provide students with a reusable record of completed registration.
+[468] Style: Heading 2 | 5.5 Conclusion
+[469] Style: Normal | The project designed and implemented a web-based EKSU Health Center Management System for structured student medical registration. The system translates the requirements identified during analysis into modules for student verification, registration-period management, medical forms, payment review, queue scheduling, staff operations, audit logging, and digital health-card generation. The FastAPI, MongoDB Atlas, Cloudinary, JWT, and Pydantic-based architecture provides a structured platform for managing the registration workflow.
+[470] Style: Heading 2 | 5.6 Recommendations
+[471] Style: Normal | The following recommendations are made:
+[472] Style: Custom Number | 1. Reliable network access should be provided at points where staff and students interact with the system.
+[473] Style: Custom Number | 2. Staff should receive training on queue management, medical-form completion, payment review, and administrative functions.
+[474] Style: Custom Number | 3. Student records should be validated before bulk upload to reduce duplicate or incorrect records.
+[475] Style: Custom Number | 4. Regular database backups and recovery procedures should be maintained.
+[476] Style: Custom Number | 5. Access credentials and administrative privileges should be reviewed periodically.
+[477] Style: Custom Number | 6. The system should be updated as EKSU changes its registration procedures or health-center requirements.
+[478] Style: Custom Number | 7. Audit logs should be reviewed periodically for unusual administrative or staff activities.
+[479] Style: Heading 2 | 5.7 Suggestions for Future Work
+[480] Style: Normal | Future versions may include SMS or email reminders, push notifications, richer reporting and analytics, configurable appointment types, improved low-connectivity support, integration with institutional identity services, automated document generation, and interoperability with other university health information systems. Further evaluation with real operational data could measure waiting time, throughput, missed appointments, and user satisfaction.
+[481] Style: Heading 2 | 5.8 Final Statement
+[482] Style: Normal | The EKSU Health Center Management System provides a structured foundation for digitizing student medical registration. By combining controlled registration stages, role-based access, session-based queues, digital records, and auditability, the system provides a practical platform that can be further refined as the health center's operational requirements evolve.
+[483] Style: Heading 1 | 
+[484] Style: Heading 1 | 
+[485] Style: Heading 1 | 
+[486] Style: Heading 1 | 
+[487] Style: Heading 1 | 
+[488] Style: Normal | 
+[489] Style: Heading 1 | References
+[490] Style: Normal | Cayirli, T., & Veral, E. (2003). Outpatient scheduling in healthcare: A review. Production and Operations Management, 12(4), 519–549.
+[491] Style: Normal | Gupta, D., & Denton, B. (2008). Appointment scheduling in healthcare: Challenges and opportunities. IIE Transactions, 40(9), 800–819.
+[492] Style: Normal | Green, L. V., Savin, S., & Murray, M. (2006). Providing timely access to care. Operations Research, 54(1), 11–25.
+[493] Style: Normal | Berg, M. (2001). Implementing information systems in healthcare. International Journal of Medical Informatics, 64(2–3), 143–156.
+[494] Style: Normal | Boulos, M. N. K., Wheeler, S., Tavares, C., & Jones, R. (2011). How smartphones are changing healthcare. Health Information & Libraries Journal, 28(4), 231–238.
+[495] Style: Normal | Green, L. V., Savin, S., & Murray, M. (2006). Providing timely access to care. Operations Research, 54(1), 11–25.
+[496] Style: Normal | Gupta, R., et al. (2016). Smart appointment systems. International Journal of Computer Applications, 145(7), 1–6.
+[497] Style: Normal | Haux, R. (2006). Health information systems. International Journal of Medical Informatics, 75(3–4), 268–281.
+[498] Style: Normal | Kuo, M. H. (2011). Opportunities and challenges of cloud computing. Journal of Medical Internet Research, 13(3), e67.
+[499] Style: Normal | Murray, M., & Berwick, D. (2003). Advanced access scheduling. JAMA, 289(8), 1035–1040.
+[500] Style: Normal | Zhang, X., et al. (2014). Web-based healthcare systems. Journal of Medical Systems, 38(5), 1–10.
+[501] Style: Normal | 
+[502] Style: Normal | 
+[503] Style: Normal | 

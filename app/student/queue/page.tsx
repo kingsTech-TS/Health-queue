@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { AuthenticatedLayout } from "@/components/layout/AppLayout";
-import { apiRequest, formatDateTime } from "@/lib/utils";
+import { QueueTimingPanel, getQueueTiming } from "@/components/queue/QueueTiming";
+import { apiRequest } from "@/lib/utils";
 import { StatusBadge, ErrorState, TableSkeleton, PageHeader, Button } from "@/components/ui/shared";
 import { toast } from "sonner";
 
@@ -39,13 +40,20 @@ function QueueCard({ qt, status, onJoin, joining }: {
 }) {
   const active = status?.status === "active";
   const alreadyIn = status?.already_joined;
-  const position = status?.my_position;
   const queueNum = status?.my_queue_number;
   const current = status?.current_number;
-  const ahead = position != null && current != null ? Math.max(0, position - 1) : null;
-  const eta = ahead != null && status?.time_per_student_minutes
-    ? ahead * status.time_per_student_minutes
-    : null;
+  const timing = status ? getQueueTiming(status) : null;
+  const ahead = timing?.ahead ?? null;
+  const eta = timing?.waitMinutes ?? null;
+  const badge = !status
+    ? { variant: "muted" as const, text: "No session" }
+    : timing?.phase === "upcoming"
+      ? { variant: "info" as const, text: "Upcoming" }
+      : timing?.phase === "closed"
+        ? { variant: "muted" as const, text: "Closed" }
+        : active
+          ? { variant: "success" as const, text: "Open" }
+          : { variant: "muted" as const, text: status.status ?? "—" };
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-5">
@@ -54,10 +62,21 @@ function QueueCard({ qt, status, onJoin, joining }: {
           <h3 className="text-sm font-semibold text-slate-900">{qt.label}</h3>
           <p className="text-xs text-slate-500">{qt.desc}</p>
         </div>
-        <StatusBadge variant={active ? "success" : "muted"}>
-          {status?.status ?? "No session"}
-        </StatusBadge>
+        <StatusBadge variant={badge.variant}>{badge.text}</StatusBadge>
       </div>
+
+      {status && (
+        <>
+          <QueueTimingPanel status={status} className="mb-4" />
+          <p className="mb-4 text-xs text-slate-500">
+            <span className="font-semibold text-slate-700">
+              {status.total_students ?? 0}
+            </span>{" "}
+            student{status.total_students === 1 ? "" : "s"} in queue
+            {status.max_students ? ` · capacity ${status.max_students}` : ""}
+          </p>
+        </>
+      )}
 
       {alreadyIn && queueNum != null ? (
         <div className="space-y-4">
@@ -99,6 +118,19 @@ function QueueCard({ qt, status, onJoin, joining }: {
   );
 }
 
+async function fetchStatuses(): Promise<Record<string, QueueStatus | null>> {
+  const results = await Promise.all(
+    queueTypes.map(async (qt) => {
+      try {
+        return [qt.key, await apiRequest<QueueStatus>(`/api/queues/status/${qt.key}`)] as const;
+      } catch {
+        return [qt.key, null] as const;
+      }
+    })
+  );
+  return Object.fromEntries(results);
+}
+
 export default function StudentQueuePage() {
   const [statuses, setStatuses] = useState<Record<string, QueueStatus | null>>({});
   const [loading, setLoading] = useState(true);
@@ -109,19 +141,7 @@ export default function StudentQueuePage() {
     setLoading(true);
     setError(false);
     try {
-      const results = await Promise.all(
-        queueTypes.map(async (qt) => {
-          try {
-            const s = await apiRequest<QueueStatus>(`/api/queues/status/${qt.key}`);
-            return { key: qt.key, status: s };
-          } catch {
-            return { key: qt.key, status: null };
-          }
-        })
-      );
-      const map: Record<string, QueueStatus | null> = {};
-      results.forEach(({ key, status }) => { map[key] = status; });
-      setStatuses(map);
+      setStatuses(await fetchStatuses());
     } catch {
       setError(true);
     } finally {
@@ -129,7 +149,19 @@ export default function StudentQueuePage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    queueMicrotask(() => {
+      void load();
+    });
+  }, []);
+
+  // Keep position and expected time fresh without the loading skeleton.
+  useEffect(() => {
+    const timer = setInterval(async () => {
+      setStatuses(await fetchStatuses());
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   const joinQueue = async (queueType: QueueType) => {
     setJoiningType(queueType);

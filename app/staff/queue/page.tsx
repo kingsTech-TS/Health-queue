@@ -3,7 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthenticatedLayout } from "@/components/layout/AppLayout";
 import { useEffect, useState } from "react";
-import { apiRequest, formatDateTime } from "@/lib/utils";
+import { apiRequest, formatDateTime, parseServerDate } from "@/lib/utils";
 import {
   StatusBadge,
   TableSkeleton,
@@ -21,6 +21,7 @@ import {
   UserCheck,
   Eye,
   RefreshCw,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -47,7 +48,16 @@ interface ActiveSession {
   start_datetime?: string;
   end_datetime?: string;
   time_per_student_minutes?: number;
+  current_count?: number;
 }
+
+// Server datetimes are naive UTC; convert to epoch ms for comparisons.
+const serverTime = (value?: string) => parseServerDate(value)?.getTime() ?? 0;
+
+// yyyy-mm-dd and HH:MM in the browser's local time, for the config form.
+const localDateInput = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+const localTimeInput = (date: Date) => date.toTimeString().slice(0, 5);
 
 type QueueHistoryItem = ActiveSession & { created_at?: string };
 
@@ -70,7 +80,7 @@ export default function StaffQueuePage() {
   const [configForm, setConfigForm] = useState({
     max_students: 50,
     title: "",
-    date: new Date().toISOString().split("T")[0],
+    date: localDateInput(new Date()),
     start_time: "08:00",
     end_time: "16:00",
     minutes_per_student: 10,
@@ -80,9 +90,9 @@ export default function StaffQueuePage() {
   const queueType = isLabAttendant ? "lab_test" : "physical_registration";
   const pageTitle = isLabAttendant ? "Laboratory Queue" : "Registration Queue";
 
-  const fetchQueueData = async () => {
+  const fetchQueueData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const [active, allSessions, pastSessions] = await Promise.all([
         apiRequest<ActiveSession>(`/api/queues/sessions/active/${queueType}`),
         apiRequest<ActiveSession[]>(
@@ -96,14 +106,14 @@ export default function StaffQueuePage() {
       const endedSessions = (allSessions || []).filter((item) =>
         item.status === "completed" ||
         item.status === "cancelled" ||
-        Boolean(item.end_datetime && new Date(item.end_datetime).getTime() <= now),
+        Boolean(item.end_datetime && serverTime(item.end_datetime) <= now),
       );
       const currentSessions = (allSessions || []).filter((item) => !endedSessions.some((ended) => ended.id === item.id));
       const historyIds = new Set((pastSessions || []).map((item) => item.id));
       const mergedHistory = [
         ...(pastSessions || []),
         ...endedSessions.filter((item) => !historyIds.has(item.id)),
-      ].sort((left, right) => new Date(right.end_datetime || right.start_datetime || 0).getTime() - new Date(left.end_datetime || left.start_datetime || 0).getTime());
+      ].sort((left, right) => serverTime(right.end_datetime || right.start_datetime) - serverTime(left.end_datetime || left.start_datetime));
 
       setSession(active && currentSessions.some((item) => item.id === active.id) ? active : null);
       setSessions(currentSessions);
@@ -147,7 +157,7 @@ export default function StaffQueuePage() {
     setConfigForm({
       max_students: 50,
       title: "",
-      date: new Date().toISOString().split("T")[0],
+      date: localDateInput(new Date()),
       start_time: "08:00",
       end_time: "16:00",
       minutes_per_student: 10,
@@ -157,17 +167,14 @@ export default function StaffQueuePage() {
 
   const openEditModal = (item: ActiveSession) => {
     setEditingSessionId(item.id);
-    const start = item.start_datetime
-      ? new Date(item.start_datetime)
-      : new Date();
-    const end = item.end_datetime ? new Date(item.end_datetime) : new Date();
-    const date = start.toISOString().split("T")[0];
+    const start = parseServerDate(item.start_datetime) ?? new Date();
+    const end = parseServerDate(item.end_datetime) ?? new Date();
     setConfigForm({
       max_students: item.max_students ?? 50,
       title: item.title || pageTitle,
-      date,
-      start_time: start.toTimeString().slice(0, 5),
-      end_time: end.toTimeString().slice(0, 5),
+      date: localDateInput(start),
+      start_time: localTimeInput(start),
+      end_time: localTimeInput(end),
       minutes_per_student: item.time_per_student_minutes ?? 10,
     });
     setConfigModalOpen(true);
@@ -177,6 +184,12 @@ export default function StaffQueuePage() {
     queueMicrotask(() => {
       void fetchQueueData();
     });
+    // Pick up students joining without a manual refresh.
+    const timer = setInterval(() => {
+      void fetchQueueData(true);
+    }, 20000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queueType]);
 
   const handleCreateOrUpdateSession = async (e: React.FormEvent) => {
@@ -335,6 +348,14 @@ export default function StaffQueuePage() {
   const completedCount = entries.filter(
     (entry) => entry.status === "completed",
   ).length;
+  const missedCount = entries.filter(
+    (entry) => entry.status === "missed",
+  ).length;
+  // Students still to be seen (waiting or currently called).
+  const inQueueCount = waitingCount + (currentServing ? 1 : 0);
+  // Backend capacity counts waiting, called and missed entries.
+  const spotsTaken = inQueueCount + missedCount;
+  const capacity = session?.max_students ?? 0;
 
   return (
     <AuthenticatedLayout title={pageTitle}>
@@ -348,6 +369,12 @@ export default function StaffQueuePage() {
                 ? "Queue session created and ready for students"
                 : "No queue session configured"}
             </p>
+            {session && (
+              <p className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-sm font-semibold text-emerald-800">
+                <Users size={15} />
+                {inQueueCount} student{inQueueCount === 1 ? "" : "s"} in queue
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -370,7 +397,7 @@ export default function StaffQueuePage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={fetchQueueData}
+              onClick={() => void fetchQueueData()}
               title="Refresh Queue"
             >
               <RefreshCw size={14} />
@@ -463,6 +490,11 @@ export default function StaffQueuePage() {
                       {formatDateTime(item.start_datetime)} -{" "}
                       {formatDateTime(item.end_datetime)}
                     </p>
+                    <p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-slate-700">
+                      <Users size={12} />
+                      {item.current_count ?? 0}
+                      {item.max_students ? ` / ${item.max_students}` : ""} in queue
+                    </p>
                   </button>
                   {!isEnded(item) && <div className="mt-2 flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => openEditModal(item)}>Edit</Button>
@@ -475,14 +507,33 @@ export default function StaffQueuePage() {
         )}
 
         {session && (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <QueueMetric label="In queue" value={entries.length} />
-            <QueueMetric label="Waiting" value={waitingCount} />
-            <QueueMetric
-              label="Now serving"
-              value={currentServing ? `#${currentServing.queue_number}` : "—"}
-            />
-            <QueueMetric label="Completed" value={completedCount} />
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+              <QueueMetric label="In queue" value={inQueueCount} highlight />
+              <QueueMetric label="Waiting" value={waitingCount} />
+              <QueueMetric
+                label="Now serving"
+                value={currentServing ? `#${currentServing.queue_number}` : "—"}
+              />
+              <QueueMetric label="Completed" value={completedCount} />
+              <QueueMetric label="Missed" value={missedCount} />
+            </div>
+            {capacity > 0 && (
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="mb-2 flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-600">Capacity used</span>
+                  <span className="font-semibold text-slate-800">
+                    {spotsTaken} / {capacity} spots
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className={`h-full rounded-full transition-all ${spotsTaken >= capacity ? "bg-red-500" : spotsTaken / capacity >= 0.8 ? "bg-amber-500" : "bg-emerald-500"}`}
+                    style={{ width: `${Math.min(100, (spotsTaken / capacity) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -575,7 +626,7 @@ export default function StaffQueuePage() {
               </p>
             </div>
             <span className="text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg">
-              {entries.length} Students Total
+              {inQueueCount} in queue · {entries.length} total
             </span>
           </div>
 
@@ -876,16 +927,26 @@ export default function StaffQueuePage() {
 function QueueMetric({
   label,
   value,
+  highlight,
 }: {
   label: string;
   value: string | number;
+  highlight?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+    <div
+      className={`rounded-xl border p-4 ${highlight ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-white"}`}
+    >
+      <p
+        className={`text-xs font-medium uppercase tracking-wide ${highlight ? "text-emerald-700" : "text-slate-400"}`}
+      >
         {label}
       </p>
-      <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
+      <p
+        className={`mt-1 text-xl font-bold ${highlight ? "text-emerald-800" : "text-slate-900"}`}
+      >
+        {value}
+      </p>
     </div>
   );
 }
